@@ -11,6 +11,7 @@ export { useAnnotationsSafe } from "./context/useAnnotationsSafe";
 // Types
 export type {
   Annotation,
+  AnnotationConfig,
   AnnotationProviderProps,
   AnnotationLabels,
   AnnotationSettings,
