@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.tgz
+
+# Demo
+demo/node_modules/
+demo/dist/
