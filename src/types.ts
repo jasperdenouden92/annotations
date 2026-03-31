@@ -1,6 +1,6 @@
 export type PanelCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 export type MarkerPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
-export type AnnotationType = "documentation" | "pro" | "question" | "con" | "suggestion" | "critical" | "user-insight";
+export type AnnotationType = "documentation" | "info" | "tip" | "pro" | "question" | "con" | "suggestion" | "critical" | "user-insight";
 
 export interface Annotation {
   id: string;
@@ -58,4 +58,10 @@ export interface AnnotationProviderProps {
   settings?: AnnotationSettings;
   labels?: Partial<AnnotationLabels>;
   children: React.ReactNode;
+}
+
+export interface AnnotationConfig {
+  project: string;
+  annotations: Annotation[];
+  settings?: AnnotationSettings;
 }

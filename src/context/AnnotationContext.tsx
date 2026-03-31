@@ -57,6 +57,20 @@ export function AnnotationProvider({
     setContextStack((prev) => prev.slice(0, -1));
   }, []);
 
+  // Warn when currentRoute is not provided but annotations have route targets
+  useEffect(() => {
+    if (
+      currentRoute === "/" &&
+      annotations.some((a) => a.target !== "global" && a.target !== "/")
+    ) {
+      console.warn(
+        '[@jasperdenouden92/annotations] currentRoute prop is not set on AnnotationProvider, ' +
+        'but some annotations have route-specific targets. The "current page" filter will not work correctly. ' +
+        'Pass currentRoute={window.location.pathname} or your router\'s current path.'
+      );
+    }
+  }, []);
+
   // Clear context stack on route change
   const prevRouteRef = useRef(currentRoute);
   useEffect(() => {

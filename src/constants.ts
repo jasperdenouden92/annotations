@@ -24,6 +24,8 @@ export const STORAGE_KEY_PANEL_CORNER = "@jasperdenouden92/annotations:panelCorn
 
 export const TYPE_COLORS: Record<AnnotationType, { bg: string; border: string; text: string }> = {
   documentation: { bg: "#F5F5F5", border: "#D0D5DD", text: "#344054" },
+  info:          { bg: "#EFF8FF", border: "#B2DDFF", text: "#175CD3" },
+  tip:           { bg: "#ECFDF3", border: "#ABEFC6", text: "#067647" },
   pro:           { bg: "#ECFDF3", border: "#ABEFC6", text: "#067647" },
   question:      { bg: "#EFF8FF", border: "#B2DDFF", text: "#175CD3" },
   con:           { bg: "#FEF3F2", border: "#FECDCA", text: "#B42318" },
