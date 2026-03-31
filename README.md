@@ -1,83 +1,105 @@
-# @{{ORG_NAME}}/annotations
+# @jasperdenouden92/annotations
 
-Centrale annotation engine. Één package, meerdere projecten.
-
-## Concept
-
-```
-[Dit package]          [Elk project]
-  Engine logic    →      annotationConfig.ts   (project-specifieke content)
-  Toggle UI       →      <AnnotationProvider>  (in App.tsx)
-  Badge/Tooltip   →      <Annotatable id="x"> (per component)
-```
-
-**Updates aan de engine** (dit package) → `npm update` in alle projecten → overal bijgewerkt  
-**Updates aan content** → alleen in het specifieke project
-
----
+Centrale annotation engine. Eén package, meerdere projecten.
 
 ## Installatie
 
 ```bash
-npm install @{{ORG_NAME}}/annotations
+npm install @jasperdenouden92/annotations
 ```
 
 Zorg dat je `.npmrc` verwijst naar GitHub Packages:
 ```
-@{{ORG_NAME}}:registry=https://npm.pkg.github.com
+@jasperdenouden92:registry=https://npm.pkg.github.com
 ```
 
 ---
 
 ## Gebruik
 
-### 1. Provider in App.tsx
+### 1. Provider + Button + Panel in je root layout
 
 ```tsx
-import { AnnotationProvider } from "@{{ORG_NAME}}/annotations";
-import { annotationConfig } from "@/annotations/config";
+import {
+  AnnotationProvider,
+  AnnotationButton,
+  AnnotationPanel,
+} from "@jasperdenouden92/annotations";
+import { useLocation } from "react-router-dom";
+import { annotations } from "@/annotations/data";
 
-export default function App() {
+export default function RootLayout() {
+  const { pathname } = useLocation();
+
   return (
-    <AnnotationProvider config={annotationConfig}>
-      {/* rest van je app */}
+    <AnnotationProvider annotations={annotations} currentRoute={pathname}>
+      {/* je app content */}
+      <Outlet />
+
+      <AnnotationButton />
+      <AnnotationPanel />
     </AnnotationProvider>
   );
 }
 ```
 
-### 2. Config in src/annotations/config.ts
+### 2. Annotations data in je project
 
 ```ts
-import type { AnnotationConfig } from "@{{ORG_NAME}}/annotations";
+// src/annotations/data.ts
+import type { Annotation } from "@jasperdenouden92/annotations";
 
-export const annotationConfig: AnnotationConfig = {
-  project: "Mijn Project",
-  settings: {
-    togglePosition: "bottom-right",
-    defaultVisible: false,
+export const annotations: Annotation[] = [
+  {
+    id: "1",
+    target: "dashboard",
+    title: "Welkom op het dashboard",
+    body: "Hier vind je een overzicht van alle relevante data.",
+    author: "Elwin",
+    date: "2026-03-30",
+    type: "info",
   },
-  annotations: {
-    "mijn-feature": {
-      title: "Hoe dit werkt",
-      body: "Uitleg voor de klant...",
-      type: "info", // info | tip | warning | new
-    },
+  {
+    id: "2",
+    target: "dashboard/orders",
+    elementId: "order-table",
+    title: "Nieuwe kolom: status",
+    body: "We hebben een statuskolom toegevoegd zodat je direct ziet waar elke order staat.",
+    author: "Jasper",
+    date: "2026-03-31",
+    type: "new",
   },
-};
+];
 ```
 
-### 3. Annotatable wrapper
+### 3. AnnotationMarker op elementen
 
 ```tsx
-import { Annotatable } from "@{{ORG_NAME}}/annotations";
+import { AnnotationMarker } from "@jasperdenouden92/annotations";
 
-function MijnComponent() {
+function OrderTable() {
   return (
-    <Annotatable id="mijn-feature">
-      <div>... jouw UI ...</div>
-    </Annotatable>
+    <AnnotationMarker annotationId="2" position="top-right">
+      <table>{/* ... */}</table>
+    </AnnotationMarker>
   );
+}
+```
+
+### 4. Context stack voor dialogs/panels
+
+```tsx
+import { useAnnotations } from "@jasperdenouden92/annotations";
+
+function ConversationDialog() {
+  const { pushContext, popContext } = useAnnotations();
+
+  useEffect(() => {
+    pushContext("dialog:conversation");
+    return () => popContext();
+  }, [pushContext, popContext]);
+
+  return <div>{/* dialog content */}</div>;
 }
 ```
 
@@ -85,12 +107,66 @@ function MijnComponent() {
 
 ## Annotation types
 
-| Type      | Kleur  | Gebruik                          |
-|-----------|--------|----------------------------------|
-| `info`    | Blauw  | Algemene uitleg                  |
-| `tip`     | Groen  | Handige tip voor de gebruiker    |
-| `warning` | Oranje | Belangrijk, let op               |
-| `new`     | Paars  | Nieuwe feature toelichting       |
+| Type            | Kleur   | Gebruik                          |
+|-----------------|---------|----------------------------------|
+| `documentation` | Grijs   | Uitleg en documentatie           |
+| `pro`           | Groen   | Positief punt, wat goed werkt    |
+| `question`      | Blauw   | Open vraag of onduidelijkheid    |
+| `con`           | Rood    | Negatief punt, probleem          |
+| `suggestion`    | Paars   | Voorstel of verbetering          |
+| `critical`      | Oranje  | Urgent, moet opgelost worden     |
+| `user-insight`  | Roze    | Inzicht uit user testing/feedback|
+
+---
+
+## Configuratie
+
+### Settings
+
+```tsx
+<AnnotationProvider
+  annotations={data}
+  currentRoute={pathname}
+  settings={{
+    togglePosition: "bottom-right",  // positie van de button
+    defaultVisible: false,           // start met annotaties aan/uit
+    accentColor: "#1567a4",          // accent kleur
+    panelWidth: 420,                 // panel breedte in px
+    panelHeight: 640,                // panel hoogte in px
+    zIndex: 9000,                    // basis z-index
+    keyboardShortcut: true,          // Cmd+. / Ctrl+. toggle
+  }}
+>
+```
+
+### Labels (i18n)
+
+```tsx
+<AnnotationProvider
+  annotations={data}
+  currentRoute={pathname}
+  labels={{
+    toggleShow: "Show annotations",
+    toggleHide: "Hide annotations",
+    tabCurrentPage: "This page",
+    tabAll: "All",
+    searchPlaceholder: "Search annotations...",
+    panelTitle: "Annotations",
+    noResults: "No results",
+  }}
+>
+```
+
+---
+
+## Route matching
+
+Annotations worden gefilterd op basis van `target` vs `currentRoute`:
+
+- **Exact match**: `"dashboard/orders"` matcht `/dashboard/orders`
+- **Wildcards**: `"projects/:id/details"` matcht `/projects/123/details`
+- **Global**: `"global"` matcht altijd, op elke pagina
+- **Context**: `"dialog:conversation"` matcht wanneer `pushContext("dialog:conversation")` actief is
 
 ---
 
@@ -98,24 +174,11 @@ function MijnComponent() {
 
 ```bash
 # In dit package:
-# 1. Maak je wijzigingen
-# 2. Bump de versie
 npm version patch   # bug fix
 npm version minor   # nieuwe feature
 npm version major   # breaking change
-
-# 3. Publish
 npm publish
 
 # In elk project:
-npm update @{{ORG_NAME}}/annotations
+npm update @jasperdenouden92/annotations
 ```
-
----
-
-## Toekomstige uitbreidingen
-
-- [ ] **Comment mode** — klanten kunnen replies typen, opgeslagen in Supabase/database
-- [ ] **Mention system** — annotaties koppelen aan specifieke gebruikers
-- [ ] **Read receipts** — bijhouden welke annotaties de klant heeft gezien
-- [ ] **Export** — annotaties exporteren als PDF samenvatting
