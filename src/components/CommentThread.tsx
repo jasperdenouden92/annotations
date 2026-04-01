@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import type { Comment } from "../types";
 import { PANEL_COLORS } from "../constants";
 
@@ -30,6 +30,10 @@ function formatDate(dateStr: string): string {
 }
 
 export function CommentThread({ comments, isLoading, error }: CommentThreadProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
   if (isLoading && comments.length === 0) {
     return React.createElement(
       "div",

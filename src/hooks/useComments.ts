@@ -17,12 +17,13 @@ interface UseCommentsReturn {
 }
 
 export function useComments({
-  apiBase,
+  apiBase: apiBaseProp,
   project,
   annotationId,
   label,
   enabled,
 }: UseCommentsProps): UseCommentsReturn {
+  const apiBase = apiBaseProp || (typeof window !== "undefined" ? window.location.origin : "");
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

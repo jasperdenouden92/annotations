@@ -8,6 +8,9 @@ interface CommentFormProps {
 }
 
 export function CommentForm({ onSubmit }: CommentFormProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const [auteur, setAuteur] = useState(() => {
     if (typeof window === "undefined") return "";
     try {
@@ -26,6 +29,8 @@ export function CommentForm({ onSubmit }: CommentFormProps) {
       localStorage.setItem(STORAGE_KEY_NAME, auteur);
     } catch {}
   }, [auteur]);
+
+  if (!mounted) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
