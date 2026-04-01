@@ -7,6 +7,7 @@ import type {
 import { DEFAULT_LABELS, DEFAULT_SETTINGS, STORAGE_KEY_PANEL_CORNER } from "../constants";
 import { matchRoute } from "../utils/route-matching";
 import { Inspector } from "../components/Inspector";
+import { FeedbackMarkers } from "../components/FeedbackMarkers";
 import { useAllComments } from "../hooks/useAllComments";
 
 export const AnnotationContext = createContext<AnnotationContextValue | null>(null);
@@ -115,7 +116,7 @@ export function AnnotationProvider({
   const { comments: allComments } = useAllComments({
     apiBase: commentsConfig?.apiBase ?? "",
     project: commentsConfig?.project ?? "",
-    enabled: !!commentsConfig?.enabled && annotationMode,
+    enabled: !!commentsConfig?.enabled && (annotationMode || inspectorActive),
   });
 
   const currentContext = contextStack.length > 0
@@ -178,6 +179,7 @@ export function AnnotationProvider({
     AnnotationContext.Provider,
     { value },
     children,
-    mounted && commentsConfig?.enabled ? React.createElement(Inspector) : null
+    mounted && commentsConfig?.enabled ? React.createElement(Inspector) : null,
+    mounted && commentsConfig?.enabled ? React.createElement(FeedbackMarkers) : null
   );
 }
