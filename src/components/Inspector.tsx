@@ -122,6 +122,8 @@ function InspectorPopover({
 
 export function Inspector() {
   const { commentsConfig, settings } = useAnnotationsSafe();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [active, setActive] = useState(false);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
   const [selected, setSelected] = useState<SelectedElement | null>(null);
@@ -214,7 +216,7 @@ export function Inspector() {
     };
   }, [selected]);
 
-  if (!commentsConfig) return null;
+  if (!mounted || !commentsConfig) return null;
 
   // Toggle button — positioned above the AnnotationButton
   const toggleButton = React.createElement(

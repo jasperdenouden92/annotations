@@ -18,6 +18,9 @@ export function AnnotationProvider({
   comments: commentsConfig,
   children,
 }: AnnotationProviderProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const settings = useMemo(
     () => ({ ...DEFAULT_SETTINGS, ...settingsOverride }),
     [settingsOverride]
@@ -29,14 +32,15 @@ export function AnnotationProvider({
 
   const [annotationMode, setAnnotationMode] = useState(settings.defaultVisible);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [panelCorner, setPanelCornerState] = useState<PanelCorner>(() => {
-    if (typeof window === "undefined") return settings.togglePosition;
+  const [panelCorner, setPanelCornerState] = useState<PanelCorner>(settings.togglePosition);
+
+  // Restore panel corner from localStorage after mount
+  useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY_PANEL_CORNER);
-      if (stored) return stored as PanelCorner;
+      if (stored) setPanelCornerState(stored as PanelCorner);
     } catch {}
-    return settings.togglePosition;
-  });
+  }, []);
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(null);
   const [hoveredAnnotationId, setHoveredAnnotationId] = useState<string | null>(null);
   const [contextStack, setContextStack] = useState<string[]>([]);
@@ -159,6 +163,6 @@ export function AnnotationProvider({
     AnnotationContext.Provider,
     { value },
     children,
-    commentsConfig?.enabled ? React.createElement(Inspector) : null
+    mounted && commentsConfig?.enabled ? React.createElement(Inspector) : null
   );
 }
