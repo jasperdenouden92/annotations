@@ -1,6 +1,6 @@
 {
   "name": "@jasperdenouden92/annotations",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Client-facing annotation engine voor alle projecten",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -16,8 +16,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts",
-    "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {

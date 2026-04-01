@@ -59,7 +59,6 @@ export function useAllComments({
       return;
     }
 
-    failedRef.current = false;
     setIsLoading(true);
     fetchComments().finally(() => setIsLoading(false));
 

@@ -189,21 +189,28 @@ export function Inspector() {
       e.preventDefault();
       e.stopPropagation();
 
-      // Use id or data-annotation-id as stable identifier; skip element if neither exists
-      const stableId = el.id || el.getAttribute("data-annotation-id");
-      if (!stableId) {
+      // Walk up from clicked element to find nearest ancestor with id or data-annotation-id
+      let target: HTMLElement | null = el;
+      let stableId: string | null = null;
+      while (target && target !== document.body) {
+        stableId = target.id || target.getAttribute("data-annotation-id");
+        if (stableId) break;
+        target = target.parentElement;
+      }
+
+      if (!stableId || !target) {
         console.warn(
-          "[@jasperdenouden92/annotations] Element heeft geen id of data-annotation-id — comment wordt overgeslagen"
+          "[@jasperdenouden92/annotations] Geen element met id of data-annotation-id gevonden — comment wordt overgeslagen"
         );
         return;
       }
 
-      const rect = el.getBoundingClientRect();
+      const rect = target.getBoundingClientRect();
       setSelected({
-        el,
+        el: target,
         rect,
         path: stableId,
-        label: getElementLabel(el),
+        label: getElementLabel(target),
       });
       setHoverRect(null);
     },
