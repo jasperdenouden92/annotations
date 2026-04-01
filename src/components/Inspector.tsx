@@ -3,7 +3,7 @@ import { useAnnotationsSafe } from "../context/useAnnotationsSafe";
 import { useComments } from "../hooks/useComments";
 import { CommentThread } from "./CommentThread";
 import { CommentForm } from "./CommentForm";
-import { getElementLabel } from "../utils/element-id";
+import { getElementLabel, getElementPath } from "../utils/element-id";
 import { getInspectorButtonPosition, snapToCorner } from "../utils/drag";
 import { PANEL_COLORS } from "../constants";
 import { XIcon } from "../icons";
@@ -44,7 +44,19 @@ function InspectorPopover({
   selected: SelectedElement;
   onClose: () => void;
 }) {
+  const popoverRef = useRef<HTMLDivElement>(null);
   const { commentsConfig, settings } = useAnnotationsSafe();
+
+  // Move focus out of popover before closing to prevent aria-hidden conflict
+  const handleClose = useCallback(() => {
+    if (
+      popoverRef.current &&
+      popoverRef.current.contains(document.activeElement)
+    ) {
+      (document.activeElement as HTMLElement)?.blur();
+    }
+    onClose();
+  }, [onClose]);
   const { comments, isLoading, error, submitComment } = useComments({
     apiBase: commentsConfig?.apiBase ?? "",
     project: commentsConfig?.project ?? "",
@@ -79,6 +91,7 @@ function InspectorPopover({
   return React.createElement(
     "div",
     {
+      ref: popoverRef,
       [DATA_INSPECTOR]: "",
       style,
       onClick: (e: React.MouseEvent) => e.stopPropagation(),
@@ -113,7 +126,7 @@ function InspectorPopover({
       React.createElement(
         "button",
         {
-          onClick: onClose,
+          onClick: handleClose,
           style: {
             background: "none",
             border: "none",
@@ -133,7 +146,7 @@ function InspectorPopover({
 }
 
 export function Inspector() {
-  const { commentsConfig, settings, panelCorner, setPanelCorner, inspectorActive: active, setInspectorActive: setActive } = useAnnotationsSafe();
+  const { commentsConfig, settings, panelCorner, setPanelCorner, inspectorActive: active, setInspectorActive: setActive, allAnnotations } = useAnnotationsSafe();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
@@ -176,22 +189,29 @@ export function Inspector() {
       e.preventDefault();
       e.stopPropagation();
 
-      if (!el.id) {
-        console.warn(
-          "[@jasperdenouden92/annotations] Annotatable component mist een id prop"
+      // Only warn about missing id if there are annotations that reference this element
+      if (!el.id && allAnnotations.length > 0) {
+        const elLabel = getElementLabel(el);
+        const hasLinkedAnnotation = allAnnotations.some(
+          (a) => a.elementId === elLabel || a.elementId === getElementPath(el)
         );
+        if (hasLinkedAnnotation) {
+          console.warn(
+            "[@jasperdenouden92/annotations] Annotatable component mist een id prop"
+          );
+        }
       }
 
       const rect = el.getBoundingClientRect();
       setSelected({
         el,
         rect,
-        path: el.id || getElementLabel(el),
+        path: el.id || getElementPath(el),
         label: getElementLabel(el),
       });
       setHoverRect(null);
     },
-    [active]
+    [active, allAnnotations]
   );
 
   const handleKeyDown = useCallback(
@@ -235,6 +255,16 @@ export function Inspector() {
       window.removeEventListener("resize", update);
     };
   }, [selected]);
+
+  // Cursor override: inject <style> via useEffect to avoid SSR hydration mismatch
+  useEffect(() => {
+    if (!active || selected) return;
+    const style = document.createElement("style");
+    style.setAttribute(DATA_INSPECTOR, "");
+    style.textContent = "* { cursor: crosshair !important; }";
+    document.head.appendChild(style);
+    return () => { style.remove(); };
+  }, [active, selected]);
 
   if (!mounted || !commentsConfig) return null;
 
@@ -358,17 +388,6 @@ export function Inspector() {
       })
     : null;
 
-  // Cursor override when active
-  const cursorOverride =
-    active && !selected
-      ? React.createElement("style", {
-          [DATA_INSPECTOR]: "",
-          dangerouslySetInnerHTML: {
-            __html: `* { cursor: crosshair !important; }`,
-          },
-        })
-      : null;
-
   // Popover
   const popover = selected
     ? React.createElement(InspectorPopover, {
@@ -381,7 +400,6 @@ export function Inspector() {
     React.Fragment,
     null,
     toggleButton,
-    cursorOverride,
     highlight,
     selectedOutline,
     popover
