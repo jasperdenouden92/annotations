@@ -16,6 +16,16 @@ export function findElementByAnnotationId(annotationId: string): HTMLElement | n
   );
   if (byData) return byData;
 
+  // Try as CSS selector path (e.g. "#root > div > section:nth-of-type(2) > button")
+  if (annotationId.includes(">") || annotationId.includes(":nth-of-type")) {
+    try {
+      const bySelector = document.querySelector<HTMLElement>(annotationId);
+      if (bySelector) return bySelector;
+    } catch {
+      // Invalid selector — ignore
+    }
+  }
+
   return null;
 }
 
