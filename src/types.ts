@@ -50,6 +50,7 @@ export interface AnnotationContextValue {
   popContext: () => void;
   labels: AnnotationLabels;
   settings: Required<AnnotationSettings>;
+  commentsConfig: CommentsConfig | null;
 }
 
 export interface AnnotationProviderProps {
@@ -57,11 +58,28 @@ export interface AnnotationProviderProps {
   currentRoute?: string;
   settings?: AnnotationSettings;
   labels?: Partial<AnnotationLabels>;
+  comments?: CommentsConfig;
   children: React.ReactNode;
+}
+
+export interface Comment {
+  id: string;
+  auteur: string;
+  comment: string;
+  status: "Open" | "In behandeling" | "Opgelost";
+  antwoord: string | null;
+  aangemaakt: string;
+}
+
+export interface CommentsConfig {
+  enabled: boolean;
+  apiBase: string;
+  project: string;
 }
 
 export interface AnnotationConfig {
   project: string;
   annotations: Annotation[];
   settings?: AnnotationSettings;
+  comments?: CommentsConfig;
 }

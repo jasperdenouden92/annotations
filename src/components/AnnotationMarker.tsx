@@ -1,6 +1,10 @@
 import React from "react";
 import { useAnnotationsSafe } from "../context/useAnnotationsSafe";
+import { useComments } from "../hooks/useComments";
+import { CommentThread } from "./CommentThread";
+import { CommentForm } from "./CommentForm";
 import { MessageSquareTextIcon } from "../icons";
+import { PANEL_COLORS } from "../constants";
 import type { MarkerPosition } from "../types";
 
 interface AnnotationMarkerProps {
@@ -31,6 +35,8 @@ export function AnnotationMarker({
     setHoveredAnnotationId,
     setPanelOpen,
     settings,
+    commentsConfig,
+    allAnnotations,
   } = useAnnotationsSafe();
 
   if (!annotationMode) {
@@ -40,11 +46,23 @@ export function AnnotationMarker({
   const isActive = activeAnnotationId === annotationId;
   const isHovered = hoveredAnnotationId === annotationId;
   const accent = settings.accentColor;
+  const showComments = !!commentsConfig && isActive;
+
+  const annotationLabel =
+    allAnnotations.find((a) => a.id === annotationId)?.title ?? annotationId;
+
+  const { comments, isLoading, error, submitComment } = useComments({
+    apiBase: commentsConfig?.apiBase ?? "",
+    project: commentsConfig?.project ?? "",
+    annotationId,
+    label: annotationLabel,
+    enabled: showComments,
+  });
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setActiveAnnotationId(annotationId);
-    setPanelOpen(true);
+    setActiveAnnotationId(isActive ? null : annotationId);
+    if (!isActive) setPanelOpen(true);
   };
 
   return React.createElement(
@@ -100,7 +118,46 @@ export function AnnotationMarker({
           } as React.CSSProperties,
         },
         React.createElement(MessageSquareTextIcon, { size: 12, color: "#667085" })
-      )
+      ),
+      // Comments popover
+      showComments &&
+        React.createElement(
+          "div",
+          {
+            style: {
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              right: 0,
+              minWidth: 280,
+              maxWidth: 360,
+              marginTop: 8,
+              zIndex: settings.zIndex + 30,
+              background: PANEL_COLORS.bg,
+              border: `1px solid ${PANEL_COLORS.border}`,
+              borderRadius: 8,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+              padding: 12,
+              maxHeight: 400,
+              overflowY: "auto",
+            } as React.CSSProperties,
+            onClick: (e: React.MouseEvent) => e.stopPropagation(),
+          },
+          React.createElement(
+            "div",
+            {
+              style: {
+                fontWeight: 600,
+                fontSize: 13,
+                color: PANEL_COLORS.textPrimary,
+                marginBottom: 8,
+              },
+            },
+            "Comments"
+          ),
+          React.createElement(CommentThread, { comments, isLoading, error }),
+          React.createElement(CommentForm, { onSubmit: submitComment })
+        )
     )
   );
 }
