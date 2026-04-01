@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@notionhq/client": "^2",
+    "@vercel/node": "^3"
+  }
+}
