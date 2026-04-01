@@ -198,11 +198,12 @@ export function Inspector() {
         target = target.parentElement;
       }
 
+      // If no stable ID found, fall back to the clicked element with a generated label
       if (!stableId || !target) {
-        console.warn(
-          "[@jasperdenouden92/annotations] Geen element met id of data-annotation-id gevonden — comment wordt overgeslagen"
-        );
-        return;
+        target = el;
+        const tag = el.tagName.toLowerCase();
+        const text = (el.textContent || "").trim().slice(0, 40);
+        stableId = text ? `${tag}: ${text}` : tag;
       }
 
       const rect = target.getBoundingClientRect();
