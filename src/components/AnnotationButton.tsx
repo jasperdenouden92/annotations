@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useAnnotations } from "../context/useAnnotations";
-import { getButtonPosition } from "../utils/drag";
+import { useAllComments } from "../hooks/useAllComments";
+import { getButtonPosition, snapToCorner } from "../utils/drag";
 import { MessageSquareTextIcon } from "../icons";
+
+const DRAG_THRESHOLD = 5; // px before a mousedown becomes a drag
 
 export function AnnotationButton() {
   const [mounted, setMounted] = useState(false);
@@ -12,17 +15,56 @@ export function AnnotationButton() {
     panelOpen,
     setPanelOpen,
     panelCorner,
+    setPanelCorner,
     currentAnnotations,
     labels,
     settings,
+    commentsConfig,
   } = useAnnotations();
+
+  const { comments: allFeedback } = useAllComments({
+    apiBase: commentsConfig?.apiBase ?? "",
+    project: commentsConfig?.project ?? "",
+    enabled: !!commentsConfig,
+  });
+
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef({ startX: 0, startY: 0, didDrag: false });
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    dragRef.current = { startX: e.clientX, startY: e.clientY, didDrag: false };
+
+    const handleMouseMove = (ev: MouseEvent) => {
+      const dx = ev.clientX - dragRef.current.startX;
+      const dy = ev.clientY - dragRef.current.startY;
+      if (!dragRef.current.didDrag && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
+        dragRef.current.didDrag = true;
+        setIsDragging(true);
+      }
+      if (dragRef.current.didDrag) {
+        const corner = snapToCorner(ev.clientX, ev.clientY, window.innerWidth, window.innerHeight);
+        setPanelCorner(corner);
+      }
+    };
+
+    const handleMouseUp = () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      // Small delay so the click handler can check didDrag
+      requestAnimationFrame(() => setIsDragging(false));
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  }, [setPanelCorner]);
 
   if (!mounted) return null;
 
-  const count = currentAnnotations.length;
-  const accent = settings.accentColor;
+  const openFeedbackCount = allFeedback.filter((c) => c.status !== "Opgelost").length;
+  const totalCount = currentAnnotations.length + openFeedbackCount;
 
   const handleClick = () => {
+    if (dragRef.current.didDrag) return; // was a drag, not a click
     if (!annotationMode) {
       setAnnotationMode(true);
       setPanelOpen(true);
@@ -34,7 +76,9 @@ export function AnnotationButton() {
   return React.createElement(
     "button",
     {
+      "data-annotation-button": "",
       onClick: handleClick,
+      onMouseDown: handleMouseDown,
       title: annotationMode ? labels.toggleHide : labels.toggleShow,
       "aria-label": annotationMode ? labels.toggleHide : labels.toggleShow,
       style: {
@@ -43,23 +87,22 @@ export function AnnotationButton() {
         width: 40,
         height: 40,
         borderRadius: 10,
-        background: annotationMode ? "#101828" : "#FFFFFF",
-        color: annotationMode ? "#FFFFFF" : "#344054",
-        border: `1px solid ${annotationMode ? "#101828" : "#D0D5DD"}`,
-        cursor: "pointer",
+        background: "#FFFFFF",
+        color: "#344054",
+        border: "1px solid #D0D5DD",
+        cursor: isDragging ? "grabbing" : "pointer",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.1)",
-        transition: "all 0.15s ease",
+        transition: isDragging ? "none" : "all 0.15s ease",
       } as React.CSSProperties,
     },
     React.createElement(MessageSquareTextIcon, {
       size: 20,
-      color: annotationMode ? "#FFFFFF" : "#667085",
+      color: "#667085",
     }),
-    count > 0 &&
-      annotationMode &&
+    totalCount > 0 &&
       React.createElement(
         "span",
         {
@@ -70,7 +113,7 @@ export function AnnotationButton() {
             minWidth: 18,
             height: 18,
             borderRadius: 9,
-            background: "#101828",
+            background: "#B42318",
             border: "2px solid #FFFFFF",
             color: "#FFFFFF",
             fontSize: 10,
@@ -81,7 +124,7 @@ export function AnnotationButton() {
             padding: "0 4px",
           } as React.CSSProperties,
         },
-        count
+        totalCount
       )
   );
 }

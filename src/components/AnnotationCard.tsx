@@ -1,7 +1,7 @@
 import React from "react";
 import type { Annotation } from "../types";
-import { MapPinIcon } from "../icons";
-import { PANEL_COLORS, TYPE_COLORS } from "../constants";
+import { CrosshairIcon } from "../icons";
+import { PANEL_COLORS, TYPE_COLORS, TYPE_ICONS } from "../constants";
 
 interface AnnotationCardProps {
   annotation: Annotation;
@@ -24,6 +24,7 @@ export function AnnotationCard({
 }: AnnotationCardProps) {
   const type = annotation.type ?? "documentation";
   const typeColor = TYPE_COLORS[type];
+  const TypeIcon = TYPE_ICONS[type];
   const hasElement = !!annotation.elementId;
 
   // Build breadcrumb from target
@@ -90,13 +91,16 @@ export function AnnotationCard({
           {
             style: { flexShrink: 0, display: "flex" } as React.CSSProperties,
           },
-          React.createElement(MapPinIcon, { size: 12, color: PANEL_COLORS.textMuted })
+          React.createElement(CrosshairIcon, { size: 12, color: PANEL_COLORS.textMuted })
         ),
       // Type badge (right)
       React.createElement(
         "span",
         {
           style: {
+            display: "flex",
+            alignItems: "center",
+            gap: 3,
             fontSize: 10,
             fontWeight: 600,
             color: typeColor.text,
@@ -109,6 +113,7 @@ export function AnnotationCard({
             flexShrink: 0,
           } as React.CSSProperties,
         },
+        React.createElement(TypeIcon, { size: 10, color: typeColor.text }),
         type
       )
     ),

@@ -14,6 +14,8 @@ const NOOP_CONTEXT: AnnotationContextValue = {
   setActiveAnnotationId: () => {},
   hoveredAnnotationId: null,
   setHoveredAnnotationId: () => {},
+  inspectorActive: false,
+  setInspectorActive: () => {},
   currentAnnotations: [],
   allAnnotations: [],
   pushContext: () => {},
