@@ -3,10 +3,14 @@ export { AnnotationProvider } from "./context/AnnotationContext";
 export { AnnotationButton } from "./components/AnnotationButton";
 export { AnnotationMarker } from "./components/AnnotationMarker";
 export { AnnotationPanel } from "./components/AnnotationPanel";
+export { CommentThread } from "./components/CommentThread";
+export { CommentForm } from "./components/CommentForm";
+export { Inspector } from "./components/Inspector";
 
 // Hooks
 export { useAnnotations } from "./context/useAnnotations";
 export { useAnnotationsSafe } from "./context/useAnnotationsSafe";
+export { useComments } from "./hooks/useComments";
 
 // Types
 export type {
@@ -19,4 +23,6 @@ export type {
   AnnotationType,
   PanelCorner,
   MarkerPosition,
+  Comment,
+  CommentsConfig,
 } from "./types";

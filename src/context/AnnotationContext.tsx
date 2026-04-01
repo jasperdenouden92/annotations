@@ -6,6 +6,7 @@ import type {
 } from "../types";
 import { DEFAULT_LABELS, DEFAULT_SETTINGS, STORAGE_KEY_PANEL_CORNER } from "../constants";
 import { matchRoute } from "../utils/route-matching";
+import { Inspector } from "../components/Inspector";
 
 export const AnnotationContext = createContext<AnnotationContextValue | null>(null);
 
@@ -14,6 +15,7 @@ export function AnnotationProvider({
   currentRoute = "/",
   settings: settingsOverride,
   labels: labelsOverride,
+  comments: commentsConfig,
   children,
 }: AnnotationProviderProps) {
   const settings = useMemo(
@@ -134,6 +136,7 @@ export function AnnotationProvider({
       popContext,
       labels,
       settings,
+      commentsConfig: commentsConfig?.enabled ? commentsConfig : null,
     }),
     [
       annotationMode,
@@ -148,8 +151,14 @@ export function AnnotationProvider({
       popContext,
       labels,
       settings,
+      commentsConfig,
     ]
   );
 
-  return React.createElement(AnnotationContext.Provider, { value }, children);
+  return React.createElement(
+    AnnotationContext.Provider,
+    { value },
+    children,
+    commentsConfig?.enabled ? React.createElement(Inspector) : null
+  );
 }

@@ -41,7 +41,15 @@ function DashboardCard({
 
 export function App() {
   return (
-    <AnnotationProvider annotations={annotations} currentRoute="/">
+    <AnnotationProvider
+      annotations={annotations}
+      currentRoute="/"
+      comments={{
+        enabled: true,
+        apiBase: "https://jouwproject.vercel.app",
+        project: "demo-dashboard",
+      }}
+    >
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "40px 24px" }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>
           Dashboard

@@ -20,6 +20,7 @@ const NOOP_CONTEXT: AnnotationContextValue = {
   popContext: () => {},
   labels: DEFAULT_LABELS,
   settings: DEFAULT_SETTINGS,
+  commentsConfig: null,
 };
 
 export function useAnnotationsSafe(): AnnotationContextValue {
