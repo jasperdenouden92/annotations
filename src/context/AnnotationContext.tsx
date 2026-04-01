@@ -30,12 +30,13 @@ export function AnnotationProvider({
     [labelsOverride]
   );
 
-  const [annotationMode, setAnnotationMode] = useState(settings.defaultVisible);
+  const [annotationMode, setAnnotationMode] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelCorner, setPanelCornerState] = useState<PanelCorner>(settings.togglePosition);
 
-  // Restore panel corner from localStorage after mount
+  // Apply defaultVisible and restore panel corner from localStorage after mount
   useEffect(() => {
+    setAnnotationMode(settings.defaultVisible);
     try {
       const stored = localStorage.getItem(STORAGE_KEY_PANEL_CORNER);
       if (stored) setPanelCornerState(stored as PanelCorner);

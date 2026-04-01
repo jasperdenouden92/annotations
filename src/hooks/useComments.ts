@@ -23,8 +23,12 @@ export function useComments({
   label,
   enabled,
 }: UseCommentsProps): UseCommentsReturn {
-  const apiBase = apiBaseProp || (typeof window !== "undefined" ? window.location.origin : "");
+  const [apiBase, setApiBase] = useState(apiBaseProp || "");
   const [comments, setComments] = useState<Comment[]>([]);
+
+  useEffect(() => {
+    if (!apiBaseProp) setApiBase(window.location.origin);
+  }, [apiBaseProp]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
