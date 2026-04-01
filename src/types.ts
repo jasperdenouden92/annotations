@@ -53,6 +53,7 @@ export interface AnnotationContextValue {
   labels: AnnotationLabels;
   settings: Required<AnnotationSettings>;
   commentsConfig: CommentsConfig | null;
+  allComments: Comment[];
 }
 
 export interface AnnotationProviderProps {
@@ -73,6 +74,7 @@ export interface Comment {
   aangemaakt: string;
   pagina?: string;
   label?: string;
+  annotationId?: string;
 }
 
 export interface CommentsConfig {

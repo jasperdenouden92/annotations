@@ -7,6 +7,7 @@ import type {
 import { DEFAULT_LABELS, DEFAULT_SETTINGS, STORAGE_KEY_PANEL_CORNER } from "../constants";
 import { matchRoute } from "../utils/route-matching";
 import { Inspector } from "../components/Inspector";
+import { useAllComments } from "../hooks/useAllComments";
 
 export const AnnotationContext = createContext<AnnotationContextValue | null>(null);
 
@@ -111,6 +112,12 @@ export function AnnotationProvider({
     return () => window.removeEventListener("keydown", handler);
   }, [settings.keyboardShortcut]);
 
+  const { comments: allComments } = useAllComments({
+    apiBase: commentsConfig?.apiBase ?? "",
+    project: commentsConfig?.project ?? "",
+    enabled: !!commentsConfig?.enabled && annotationMode,
+  });
+
   const currentContext = contextStack.length > 0
     ? contextStack[contextStack.length - 1]
     : currentRoute;
@@ -146,6 +153,7 @@ export function AnnotationProvider({
       labels,
       settings,
       commentsConfig: commentsConfig?.enabled ? commentsConfig : null,
+      allComments,
     }),
     [
       annotationMode,
@@ -162,6 +170,7 @@ export function AnnotationProvider({
       labels,
       settings,
       commentsConfig,
+      allComments,
     ]
   );
 

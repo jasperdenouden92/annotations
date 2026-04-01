@@ -23,6 +23,7 @@ const NOOP_CONTEXT: AnnotationContextValue = {
   labels: DEFAULT_LABELS,
   settings: DEFAULT_SETTINGS,
   commentsConfig: null,
+  allComments: [],
 };
 
 export function useAnnotationsSafe(): AnnotationContextValue {
