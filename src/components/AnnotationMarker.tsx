@@ -41,6 +41,7 @@ export function AnnotationMarker({
     settings,
     commentsConfig,
     allAnnotations,
+    allComments,
   } = useAnnotationsSafe();
 
   const isActive = activeAnnotationId === annotationId;
@@ -62,6 +63,14 @@ export function AnnotationMarker({
   const annotationType = annotation?.type ?? "documentation";
   const typeColor = TYPE_COLORS[annotationType];
   const TypeIcon = TYPE_ICONS[annotationType];
+
+  // Feedback badge: filter allComments for this annotationId
+  const elementComments = commentsConfig
+    ? allComments.filter((c) => c.annotationId === annotationId)
+    : [];
+  const openCommentCount = elementComments.filter((c) => c.status !== "Opgelost").length;
+  const hasComments = elementComments.length > 0;
+  const allResolved = hasComments && openCommentCount === 0;
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -133,6 +142,44 @@ export function AnnotationMarker({
           } as React.CSSProperties,
         },
         badgeContent
+      ),
+      // Feedback badge — only when comments exist
+      showMarkers && hasComments && React.createElement(
+        "div",
+        {
+          "aria-label": `${openCommentCount} open comments`,
+          style: {
+            position: "absolute",
+            ...POSITION_STYLES[position],
+            // Offset horizontally from annotation badge
+            ...(position.includes("right")
+              ? { right: -6 + 22 }
+              : { left: -6 + 22 }),
+            zIndex: settings.zIndex + 19,
+            width: 24,
+            height: 24,
+            borderRadius: "50%",
+            background: allResolved ? "#F2F4F7" : "#EFF8FF",
+            color: allResolved ? "#98A2B3" : "#175CD3",
+            border: `1.5px solid ${allResolved ? "#D0D5DD" : "#B2DDFF"}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 1,
+            boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+            pointerEvents: "none",
+          } as React.CSSProperties,
+        },
+        openCommentCount > 0
+          ? React.createElement(
+              "span",
+              { style: { fontSize: 10, fontWeight: 700, lineHeight: 1 } },
+              openCommentCount
+            )
+          : React.createElement(MessageSquareTextIcon, {
+              size: 12,
+              color: allResolved ? "#98A2B3" : "#175CD3",
+            })
       ),
       // Popover when active
       showMarkers && showPopover &&
