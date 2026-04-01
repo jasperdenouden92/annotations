@@ -3,7 +3,7 @@ import { useAnnotationsSafe } from "../context/useAnnotationsSafe";
 import { useComments } from "../hooks/useComments";
 import { CommentThread } from "./CommentThread";
 import { CommentForm } from "./CommentForm";
-import { getElementLabel } from "../utils/element-id";
+import { getElementLabel, getElementPath } from "../utils/element-id";
 import { getInspectorButtonPosition, snapToCorner } from "../utils/drag";
 import { PANEL_COLORS } from "../constants";
 import { XIcon } from "../icons";
@@ -210,12 +210,10 @@ export function Inspector() {
         target = target.parentElement;
       }
 
-      // If no stable ID found, fall back to the clicked element with a generated label
+      // If no stable ID found, fall back to CSS selector path
       if (!stableId || !target) {
         target = el;
-        const tag = el.tagName.toLowerCase();
-        const text = (el.textContent || "").trim().slice(0, 40);
-        stableId = text ? `${tag}: ${text}` : tag;
+        stableId = getElementPath(el);
       }
 
       const rect = target.getBoundingClientRect();
