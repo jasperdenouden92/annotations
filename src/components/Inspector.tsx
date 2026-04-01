@@ -3,7 +3,7 @@ import { useAnnotationsSafe } from "../context/useAnnotationsSafe";
 import { useComments } from "../hooks/useComments";
 import { CommentThread } from "./CommentThread";
 import { CommentForm } from "./CommentForm";
-import { getElementLabel, getElementPath } from "../utils/element-id";
+import { getElementLabel } from "../utils/element-id";
 import { getInspectorButtonPosition, snapToCorner } from "../utils/drag";
 import { PANEL_COLORS } from "../constants";
 import { XIcon } from "../icons";
@@ -146,7 +146,7 @@ function InspectorPopover({
 }
 
 export function Inspector() {
-  const { commentsConfig, settings, panelCorner, setPanelCorner, inspectorActive: active, setInspectorActive: setActive, allAnnotations } = useAnnotationsSafe();
+  const { commentsConfig, settings, panelCorner, setPanelCorner, inspectorActive: active, setInspectorActive: setActive } = useAnnotationsSafe();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
@@ -189,29 +189,25 @@ export function Inspector() {
       e.preventDefault();
       e.stopPropagation();
 
-      // Only warn about missing id if there are annotations that reference this element
-      if (!el.id && allAnnotations.length > 0) {
-        const elLabel = getElementLabel(el);
-        const hasLinkedAnnotation = allAnnotations.some(
-          (a) => a.elementId === elLabel || a.elementId === getElementPath(el)
+      // Use id or data-annotation-id as stable identifier; skip element if neither exists
+      const stableId = el.id || el.getAttribute("data-annotation-id");
+      if (!stableId) {
+        console.warn(
+          "[@jasperdenouden92/annotations] Element heeft geen id of data-annotation-id — comment wordt overgeslagen"
         );
-        if (hasLinkedAnnotation) {
-          console.warn(
-            "[@jasperdenouden92/annotations] Annotatable component mist een id prop"
-          );
-        }
+        return;
       }
 
       const rect = el.getBoundingClientRect();
       setSelected({
         el,
         rect,
-        path: el.id || getElementPath(el),
+        path: stableId,
         label: getElementLabel(el),
       });
       setHoverRect(null);
     },
-    [active, allAnnotations]
+    [active]
   );
 
   const handleKeyDown = useCallback(
