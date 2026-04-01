@@ -192,7 +192,13 @@ export function AnnotationPanel() {
       React.createElement(
         "button",
         {
-          onClick: () => setAnnotationMode(false),
+          onClick: () => {
+            // Move focus out before closing to prevent aria-hidden conflict on ancestor
+            if (panelRef.current && panelRef.current.contains(document.activeElement)) {
+              (document.activeElement as HTMLElement)?.blur();
+            }
+            setAnnotationMode(false);
+          },
           "aria-label": "Sluit panel",
           style: {
             background: "none",

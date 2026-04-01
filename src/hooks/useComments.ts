@@ -28,9 +28,11 @@ export function useComments({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const failedRef = useRef(false);
+  const warnedRef = useRef(false);
 
   const fetchComments = useCallback(async () => {
-    if (!enabled) return;
+    if (!enabled || failedRef.current) return;
 
     const url = `${apiBase}/api/comments?project=${encodeURIComponent(project)}&annotationId=${encodeURIComponent(annotationId)}`;
 
@@ -41,7 +43,14 @@ export function useComments({
       setComments(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Fout bij ophalen comments");
+      const message = err instanceof Error ? err.message : "Fout bij ophalen comments";
+      setError(message);
+      failedRef.current = true;
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (!warnedRef.current) {
+        warnedRef.current = true;
+        console.warn(`[@jasperdenouden92/annotations] Comments API niet beschikbaar: ${message}`);
+      }
     }
   }, [apiBase, project, annotationId, enabled]);
 
@@ -51,6 +60,7 @@ export function useComments({
       return;
     }
 
+    failedRef.current = false;
     setIsLoading(true);
     fetchComments().finally(() => setIsLoading(false));
 
