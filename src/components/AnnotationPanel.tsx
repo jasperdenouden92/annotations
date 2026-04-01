@@ -6,6 +6,8 @@ import { PANEL_COLORS } from "../constants";
 import { AnnotationCard } from "./AnnotationCard";
 
 export function AnnotationPanel() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const {
     annotationMode,
     panelOpen,
@@ -70,7 +72,7 @@ export function AnnotationPanel() {
     };
   }, [isDragging, setPanelCorner, panelWidth, panelHeight]);
 
-  if (!annotationMode || !panelOpen) return null;
+  if (!mounted || !annotationMode || !panelOpen) return null;
 
   const sourceAnnotations = tab === "page" ? currentAnnotations : allAnnotations;
   const filtered = searchQuery

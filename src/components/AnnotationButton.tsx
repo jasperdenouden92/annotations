@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useAnnotations } from "../context/useAnnotations";
 import { getButtonPosition } from "../utils/drag";
 import { MessageSquareTextIcon } from "../icons";
 
 export function AnnotationButton() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const {
     annotationMode,
     setAnnotationMode,
@@ -14,6 +16,8 @@ export function AnnotationButton() {
     labels,
     settings,
   } = useAnnotations();
+
+  if (!mounted) return null;
 
   const count = currentAnnotations.length;
   const accent = settings.accentColor;

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useAnnotationsSafe } from "../context/useAnnotationsSafe";
 import { useComments } from "../hooks/useComments";
 import { CommentThread } from "./CommentThread";
@@ -27,6 +27,9 @@ export function AnnotationMarker({
   position = "top-right",
   className,
 }: AnnotationMarkerProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const {
     annotationMode,
     activeAnnotationId,
@@ -39,7 +42,7 @@ export function AnnotationMarker({
     allAnnotations,
   } = useAnnotationsSafe();
 
-  if (!annotationMode) {
+  if (!mounted || !annotationMode) {
     return React.createElement(React.Fragment, null, children);
   }
 
