@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useAnnotations } from "../context/useAnnotations";
 import { useAllComments } from "../hooks/useAllComments";
 import { getCornerPosition, snapToCorner } from "../utils/drag";
+import { findElementByAnnotationId, scrollToAndHighlight, showHoverHighlight, removeHoverHighlight } from "../utils/find-element";
 import { XIcon, SearchIcon, GripVerticalIcon } from "../icons";
 import { PANEL_COLORS, TYPE_COLORS, TYPE_ICONS } from "../constants";
 import { AnnotationCard } from "./AnnotationCard";
@@ -564,13 +565,33 @@ export function AnnotationPanel() {
                       "div",
                       {
                         key: c.id,
+                        onClick: () => {
+                          if (!c.annotationId) return;
+                          const el = findElementByAnnotationId(c.annotationId);
+                          if (el) {
+                            scrollToAndHighlight(el, zIndex);
+                          }
+                        },
                         style: {
                           padding: "10px 12px",
                           borderRadius: 6,
                           border: `1px solid ${PANEL_COLORS.border}`,
                           background: "#FFFFFF",
                           fontSize: 13,
+                          cursor: c.annotationId ? "pointer" : "default",
+                          transition: "border-color 0.15s ease",
                         } as React.CSSProperties,
+                        onMouseEnter: (e: React.MouseEvent<HTMLDivElement>) => {
+                          if (c.annotationId) {
+                            e.currentTarget.style.borderColor = "#175CD3";
+                            const el = findElementByAnnotationId(c.annotationId);
+                            if (el) showHoverHighlight(el, zIndex);
+                          }
+                        },
+                        onMouseLeave: (e: React.MouseEvent<HTMLDivElement>) => {
+                          e.currentTarget.style.borderColor = PANEL_COLORS.border;
+                          removeHoverHighlight();
+                        },
                       },
                       // Label (element reference)
                       c.label && React.createElement(
