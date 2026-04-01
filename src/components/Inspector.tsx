@@ -3,7 +3,7 @@ import { useAnnotationsSafe } from "../context/useAnnotationsSafe";
 import { useComments } from "../hooks/useComments";
 import { CommentThread } from "./CommentThread";
 import { CommentForm } from "./CommentForm";
-import { getElementPath, getElementLabel } from "../utils/element-id";
+import { getElementLabel } from "../utils/element-id";
 import { PANEL_COLORS } from "../constants";
 import { XIcon } from "../icons";
 
@@ -153,11 +153,18 @@ export function Inspector() {
       e.preventDefault();
       e.stopPropagation();
 
+      if (!el.id) {
+        console.warn(
+          "[@jasperdenouden92/annotations] Annotatable component mist een id prop"
+        );
+        return;
+      }
+
       const rect = el.getBoundingClientRect();
       setSelected({
         el,
         rect,
-        path: getElementPath(el),
+        path: el.id,
         label: getElementLabel(el),
       });
       setHoverRect(null);
