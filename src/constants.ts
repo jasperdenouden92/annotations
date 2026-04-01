@@ -1,4 +1,18 @@
 import type { AnnotationLabels, AnnotationSettings, AnnotationType } from "./types";
+import {
+  FileTextIcon, ThumbsUpIcon,
+  HelpCircleIcon, ThumbsDownIcon, SparklesIcon, AlertTriangleIcon, EyeIcon,
+} from "./icons";
+
+export const TYPE_ICONS: Record<AnnotationType, typeof FileTextIcon> = {
+  documentation: FileTextIcon,
+  pro: ThumbsUpIcon,
+  question: HelpCircleIcon,
+  con: ThumbsDownIcon,
+  suggestion: SparklesIcon,
+  critical: AlertTriangleIcon,
+  "user-insight": EyeIcon,
+};
 
 export const DEFAULT_LABELS: AnnotationLabels = {
   toggleShow: "Annotaties tonen",
@@ -6,7 +20,7 @@ export const DEFAULT_LABELS: AnnotationLabels = {
   tabCurrentPage: "Deze pagina",
   tabAll: "Alles",
   searchPlaceholder: "Zoek annotaties...",
-  panelTitle: "Annotaties",
+  panelTitle: "Annotaties & Feedback",
   noResults: "Geen resultaten",
 };
 
@@ -24,8 +38,6 @@ export const STORAGE_KEY_PANEL_CORNER = "@jasperdenouden92/annotations:panelCorn
 
 export const TYPE_COLORS: Record<AnnotationType, { bg: string; border: string; text: string }> = {
   documentation: { bg: "#F5F5F5", border: "#D0D5DD", text: "#344054" },
-  info:          { bg: "#EFF8FF", border: "#B2DDFF", text: "#175CD3" },
-  tip:           { bg: "#ECFDF3", border: "#ABEFC6", text: "#067647" },
   pro:           { bg: "#ECFDF3", border: "#ABEFC6", text: "#067647" },
   question:      { bg: "#EFF8FF", border: "#B2DDFF", text: "#175CD3" },
   con:           { bg: "#FEF3F2", border: "#FECDCA", text: "#B42318" },

@@ -43,6 +43,7 @@ export function AnnotationProvider({
   }, []);
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(null);
   const [hoveredAnnotationId, setHoveredAnnotationId] = useState<string | null>(null);
+  const [inspectorActive, setInspectorActive] = useState(false);
   const [contextStack, setContextStack] = useState<string[]>([]);
 
   const contextStackRef = useRef(contextStack);
@@ -86,11 +87,12 @@ export function AnnotationProvider({
     }
   }, [currentRoute]);
 
-  // Close panel when annotation mode is turned off
+  // Close panel and inspector when annotation mode is turned off
   useEffect(() => {
     if (!annotationMode) {
       setPanelOpen(false);
       setActiveAnnotationId(null);
+      setInspectorActive(false);
     }
   }, [annotationMode]);
 
@@ -134,6 +136,8 @@ export function AnnotationProvider({
       setActiveAnnotationId,
       hoveredAnnotationId,
       setHoveredAnnotationId,
+      inspectorActive,
+      setInspectorActive,
       currentAnnotations,
       allAnnotations: annotations,
       pushContext,
@@ -149,6 +153,7 @@ export function AnnotationProvider({
       setPanelCorner,
       activeAnnotationId,
       hoveredAnnotationId,
+      inspectorActive,
       currentAnnotations,
       annotations,
       pushContext,

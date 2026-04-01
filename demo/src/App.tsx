@@ -46,7 +46,7 @@ export function App() {
       currentRoute="/"
       comments={{
         enabled: true,
-        apiBase: "https://jouwproject.vercel.app",
+        apiBase: "",
         project: "demo-dashboard",
       }}
     >

@@ -1,15 +1,28 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useAnnotations } from "../context/useAnnotations";
+import { useAllComments } from "../hooks/useAllComments";
 import { getCornerPosition, snapToCorner } from "../utils/drag";
 import { XIcon, SearchIcon, GripVerticalIcon } from "../icons";
-import { PANEL_COLORS } from "../constants";
+import { PANEL_COLORS, TYPE_COLORS, TYPE_ICONS } from "../constants";
 import { AnnotationCard } from "./AnnotationCard";
+import type { Comment, AnnotationType } from "../types";
+
+const ALL_TYPES: AnnotationType[] = [
+  "documentation", "pro", "question", "con", "suggestion", "critical", "user-insight",
+];
+const ALL_STATUSES: Comment["status"][] = ["Open", "In behandeling", "Opgelost"];
+const STATUS_PILL_COLORS: Record<Comment["status"], { bg: string; text: string }> = {
+  "Open": { bg: "#FEF3F2", text: "#B42318" },
+  "In behandeling": { bg: "#FFF6ED", text: "#B93815" },
+  "Opgelost": { bg: "#ECFDF3", text: "#067647" },
+};
 
 export function AnnotationPanel() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const {
     annotationMode,
+    setAnnotationMode,
     panelOpen,
     setPanelOpen,
     panelCorner,
@@ -22,16 +35,26 @@ export function AnnotationPanel() {
     allAnnotations,
     labels,
     settings,
+    commentsConfig,
   } = useAnnotations();
 
+  const [view, setView] = useState<"annotations" | "feedback">("annotations");
   const [tab, setTab] = useState<"page" | "all">("page");
   const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<Set<AnnotationType>>(new Set());
+  const [statusFilter, setStatusFilter] = useState<Set<Comment["status"]>>(new Set(["Open", "In behandeling"]));
   const [isDragging, setIsDragging] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const activeCardRef = useRef<HTMLDivElement>(null);
 
   const { panelWidth, panelHeight, zIndex, accentColor } = settings;
+
+  const { comments: allFeedback, isLoading: feedbackLoading, error: feedbackError } = useAllComments({
+    apiBase: commentsConfig?.apiBase ?? "",
+    project: commentsConfig?.project ?? "",
+    enabled: !!commentsConfig,
+  });
 
   // Auto-scroll to active annotation card
   useEffect(() => {
@@ -75,13 +98,31 @@ export function AnnotationPanel() {
   if (!mounted || !annotationMode || !panelOpen) return null;
 
   const sourceAnnotations = tab === "page" ? currentAnnotations : allAnnotations;
-  const filtered = searchQuery
-    ? sourceAnnotations.filter(
-        (a) =>
-          a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          a.body.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : sourceAnnotations;
+  const filtered = sourceAnnotations.filter((a) => {
+    if (typeFilter.size > 0 && !typeFilter.has(a.type ?? "documentation")) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (!a.title.toLowerCase().includes(q) && !a.body.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  const currentRoute = typeof window !== "undefined" ? window.location.pathname : "/";
+  const sourceFeedback = tab === "page"
+    ? allFeedback.filter((c) => c.pagina === currentRoute || !c.pagina)
+    : allFeedback;
+  const filteredFeedback = sourceFeedback.filter((c) => {
+    if (statusFilter.size > 0 && !statusFilter.has(c.status)) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (
+        !c.comment.toLowerCase().includes(q) &&
+        !c.auteur.toLowerCase().includes(q) &&
+        !(c.label ?? "").toLowerCase().includes(q)
+      ) return false;
+    }
+    return true;
+  });
 
   const positionStyles = getCornerPosition(panelCorner, panelWidth, panelHeight);
 
@@ -151,7 +192,7 @@ export function AnnotationPanel() {
       React.createElement(
         "button",
         {
-          onClick: () => setPanelOpen(false),
+          onClick: () => setAnnotationMode(false),
           "aria-label": "Sluit panel",
           style: {
             background: "none",
@@ -168,7 +209,60 @@ export function AnnotationPanel() {
       )
     ),
 
-    // ── Tabs ──
+    // ── Top-level view tabs: Annotaties / Feedback ──
+    React.createElement(
+      "div",
+      {
+        style: {
+          display: "flex",
+          padding: "8px 14px 0",
+          gap: 0,
+          borderBottom: `1px solid ${PANEL_COLORS.border}`,
+        } as React.CSSProperties,
+      },
+      ...(["annotations", "feedback"] as const).map((v) =>
+        React.createElement(
+          "button",
+          {
+            key: v,
+            onClick: () => setView(v),
+            style: {
+              background: "transparent",
+              border: "none",
+              borderBottom: view === v ? `2px solid ${accentColor}` : "2px solid transparent",
+              padding: "6px 14px 8px",
+              cursor: "pointer",
+              fontSize: 13,
+              fontFamily: "inherit",
+              fontWeight: view === v ? 600 : 400,
+              color: view === v ? PANEL_COLORS.textPrimary : PANEL_COLORS.textMuted,
+              transition: "all 0.15s ease",
+            } as React.CSSProperties,
+          },
+          v === "annotations" ? "Annotaties" : "Feedback",
+          v === "feedback" && allFeedback.filter((c) => c.status !== "Opgelost").length > 0
+            ? React.createElement(
+                "span",
+                {
+                  style: {
+                    marginLeft: 6,
+                    fontSize: 10,
+                    fontWeight: 600,
+                    background: "#F2F4F7",
+                    color: "#344054",
+                    border: "1px solid #EAECF0",
+                    borderRadius: 8,
+                    padding: "1px 6px",
+                  } as React.CSSProperties,
+                },
+                allFeedback.filter((c) => c.status !== "Opgelost").length
+              )
+            : null
+        )
+      )
+    ),
+
+    // ── Sub-tabs: page / all (shared) ──
     React.createElement(
       "div",
       {
@@ -179,8 +273,16 @@ export function AnnotationPanel() {
         } as React.CSSProperties,
       },
       ...[
-        { key: "page" as const, label: labels.tabCurrentPage, count: currentAnnotations.length },
-        { key: "all" as const, label: labels.tabAll, count: allAnnotations.length },
+        {
+          key: "page" as const,
+          label: labels.tabCurrentPage,
+          count: view === "annotations" ? currentAnnotations.length : sourceFeedback.length,
+        },
+        {
+          key: "all" as const,
+          label: labels.tabAll,
+          count: view === "annotations" ? allAnnotations.length : allFeedback.length,
+        },
       ].map((t) =>
         React.createElement(
           "button",
@@ -196,8 +298,7 @@ export function AnnotationPanel() {
               fontSize: 12,
               fontFamily: "inherit",
               fontWeight: 500,
-              color:
-                tab === t.key ? PANEL_COLORS.textPrimary : PANEL_COLORS.textSecondary,
+              color: tab === t.key ? PANEL_COLORS.textPrimary : PANEL_COLORS.textSecondary,
               display: "flex",
               alignItems: "center",
               gap: 6,
@@ -226,7 +327,7 @@ export function AnnotationPanel() {
       )
     ),
 
-    // ── Search ──
+    // ── Search (shared) ──
     React.createElement(
       "div",
       {
@@ -251,7 +352,7 @@ export function AnnotationPanel() {
       ),
       React.createElement("input", {
         type: "text",
-        placeholder: labels.searchPlaceholder,
+        placeholder: view === "feedback" ? "Zoek feedback..." : labels.searchPlaceholder,
         value: searchQuery,
         onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
           setSearchQuery(e.target.value),
@@ -270,53 +371,331 @@ export function AnnotationPanel() {
       })
     ),
 
-    // ── Annotation list ──
+    // ── Filter pills ──
     React.createElement(
       "div",
       {
         style: {
-          flex: 1,
-          overflowY: "auto",
-          padding: "4px 8px 8px",
           display: "flex",
-          flexDirection: "column",
-          gap: 2,
+          flexWrap: "wrap",
+          gap: 4,
+          padding: "0 14px 6px",
         } as React.CSSProperties,
       },
-      filtered.length === 0
-        ? React.createElement(
-            "p",
-            {
-              style: {
-                textAlign: "center",
-                color: PANEL_COLORS.textMuted,
-                fontSize: 12,
-                padding: "24px 0",
-              } as React.CSSProperties,
-            },
-            labels.noResults
-          )
-        : filtered.map((annotation) =>
-            React.createElement(
-              "div",
+      ...(view === "annotations"
+        ? ALL_TYPES.map((t) => {
+            const active = typeFilter.has(t);
+            const tc = TYPE_COLORS[t];
+            const Icon = TYPE_ICONS[t];
+            return React.createElement(
+              "button",
               {
-                key: annotation.id,
-                ref:
-                  annotation.id === activeAnnotationId
-                    ? activeCardRef
-                    : undefined,
+                key: t,
+                onClick: () => {
+                  setTypeFilter((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(t)) next.delete(t); else next.add(t);
+                    return next;
+                  });
+                },
+                style: {
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 3,
+                  fontSize: 10,
+                  fontWeight: 500,
+                  fontFamily: "inherit",
+                  padding: "2px 8px",
+                  borderRadius: 10,
+                  border: `1px solid ${active ? tc.border : PANEL_COLORS.border}`,
+                  background: active ? tc.bg : "transparent",
+                  color: active ? tc.text : PANEL_COLORS.textMuted,
+                  cursor: "pointer",
+                  transition: "all 0.1s ease",
+                } as React.CSSProperties,
               },
-              React.createElement(AnnotationCard, {
-                annotation,
-                isActive: annotation.id === activeAnnotationId,
-                isHovered: annotation.id === hoveredAnnotationId,
-                accentColor,
-                onSelect: (id: string) => setActiveAnnotationId(id),
-                onHoverStart: (id: string) => setHoveredAnnotationId(id),
-                onHoverEnd: () => setHoveredAnnotationId(null),
-              })
-            )
-          )
-    )
+              React.createElement(Icon, { size: 10, color: active ? tc.text : PANEL_COLORS.textMuted }),
+              t.charAt(0).toUpperCase() + t.slice(1)
+            );
+          })
+        : ALL_STATUSES.map((s) => {
+            const active = statusFilter.has(s);
+            const sc = STATUS_PILL_COLORS[s];
+            return React.createElement(
+              "button",
+              {
+                key: s,
+                onClick: () => {
+                  setStatusFilter((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(s)) next.delete(s); else next.add(s);
+                    return next;
+                  });
+                },
+                style: {
+                  fontSize: 11,
+                  fontWeight: 500,
+                  fontFamily: "inherit",
+                  padding: "2px 10px",
+                  borderRadius: 10,
+                  border: `1px solid ${active ? sc.text + "44" : PANEL_COLORS.border}`,
+                  background: active ? sc.bg : "transparent",
+                  color: active ? sc.text : PANEL_COLORS.textMuted,
+                  cursor: "pointer",
+                  transition: "all 0.1s ease",
+                } as React.CSSProperties,
+              },
+              s
+            );
+          })
+      )
+    ),
+
+    // ── List content ──
+    view === "annotations"
+      ? // Annotation list
+        React.createElement(
+          "div",
+          {
+            style: {
+              flex: 1,
+              overflowY: "auto",
+              padding: "4px 8px 8px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+            } as React.CSSProperties,
+          },
+          filtered.length === 0
+            ? React.createElement(
+                "p",
+                {
+                  style: {
+                    textAlign: "center",
+                    color: PANEL_COLORS.textMuted,
+                    fontSize: 12,
+                    padding: "24px 0",
+                  } as React.CSSProperties,
+                },
+                labels.noResults
+              )
+            : filtered.map((annotation) =>
+                React.createElement(
+                  "div",
+                  {
+                    key: annotation.id,
+                    ref:
+                      annotation.id === activeAnnotationId
+                        ? activeCardRef
+                        : undefined,
+                  },
+                  React.createElement(AnnotationCard, {
+                    annotation,
+                    isActive: annotation.id === activeAnnotationId,
+                    isHovered: annotation.id === hoveredAnnotationId,
+                    accentColor,
+                    onSelect: (id: string) => setActiveAnnotationId(id),
+                    onHoverStart: (id: string) => setHoveredAnnotationId(id),
+                    onHoverEnd: () => setHoveredAnnotationId(null),
+                  })
+                )
+              )
+        )
+      : // Feedback list
+        React.createElement(
+          "div",
+          {
+            style: {
+              flex: 1,
+              overflowY: "auto",
+              padding: "4px 8px 8px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+            } as React.CSSProperties,
+          },
+          feedbackLoading && filteredFeedback.length === 0
+            ? React.createElement(
+                "p",
+                {
+                  style: {
+                    textAlign: "center",
+                    color: PANEL_COLORS.textMuted,
+                    fontSize: 12,
+                    padding: "24px 0",
+                  } as React.CSSProperties,
+                },
+                "Feedback laden..."
+              )
+            : feedbackError && filteredFeedback.length === 0
+              ? React.createElement(
+                  "p",
+                  {
+                    style: {
+                      textAlign: "center",
+                      color: "#B42318",
+                      fontSize: 12,
+                      padding: "24px 0",
+                    } as React.CSSProperties,
+                  },
+                  "Fout bij laden feedback"
+                )
+              : filteredFeedback.length === 0
+                ? React.createElement(
+                    "p",
+                    {
+                      style: {
+                        textAlign: "center",
+                        color: PANEL_COLORS.textMuted,
+                        fontSize: 12,
+                        padding: "24px 0",
+                      } as React.CSSProperties,
+                    },
+                    "Nog geen feedback"
+                  )
+                : filteredFeedback.map((c: Comment) =>
+                    React.createElement(
+                      "div",
+                      {
+                        key: c.id,
+                        style: {
+                          padding: "10px 12px",
+                          borderRadius: 6,
+                          border: `1px solid ${PANEL_COLORS.border}`,
+                          background: "#FFFFFF",
+                          fontSize: 13,
+                        } as React.CSSProperties,
+                      },
+                      // Label (element reference)
+                      c.label && React.createElement(
+                        "div",
+                        {
+                          style: {
+                            fontSize: 11,
+                            color: PANEL_COLORS.textMuted,
+                            marginBottom: 4,
+                            fontFamily: "monospace",
+                          },
+                        },
+                        c.label
+                      ),
+                      // Header: author + status
+                      React.createElement(
+                        "div",
+                        {
+                          style: {
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            marginBottom: 4,
+                          } as React.CSSProperties,
+                        },
+                        React.createElement(
+                          "span",
+                          {
+                            style: {
+                              fontWeight: 600,
+                              color: PANEL_COLORS.textPrimary,
+                              fontSize: 13,
+                            },
+                          },
+                          c.auteur
+                        ),
+                        React.createElement(
+                          "span",
+                          {
+                            style: {
+                              fontSize: 11,
+                              fontWeight: 500,
+                              padding: "1px 6px",
+                              borderRadius: 10,
+                              background:
+                                c.status === "Open" ? "#FEF3F2"
+                                : c.status === "In behandeling" ? "#FFF6ED"
+                                : "#ECFDF3",
+                              color:
+                                c.status === "Open" ? "#B42318"
+                                : c.status === "In behandeling" ? "#B93815"
+                                : "#067647",
+                            } as React.CSSProperties,
+                          },
+                          c.status
+                        )
+                      ),
+                      // Comment text
+                      React.createElement(
+                        "div",
+                        {
+                          style: {
+                            color: PANEL_COLORS.textSecondary,
+                            lineHeight: 1.4,
+                            whiteSpace: "pre-wrap",
+                          } as React.CSSProperties,
+                        },
+                        c.comment
+                      ),
+                      // Reply
+                      c.antwoord
+                        ? React.createElement(
+                            "div",
+                            {
+                              style: {
+                                marginTop: 6,
+                                padding: "6px 8px",
+                                borderRadius: 4,
+                                background: "#F9FAFB",
+                                borderLeft: "3px solid #D0D5DD",
+                                fontSize: 13,
+                                color: PANEL_COLORS.textSecondary,
+                                lineHeight: 1.4,
+                                whiteSpace: "pre-wrap",
+                              } as React.CSSProperties,
+                            },
+                            React.createElement(
+                              "span",
+                              {
+                                style: {
+                                  fontWeight: 600,
+                                  fontSize: 11,
+                                  color: PANEL_COLORS.textMuted,
+                                  display: "block",
+                                  marginBottom: 2,
+                                },
+                              },
+                              "Antwoord"
+                            ),
+                            c.antwoord
+                          )
+                        : null,
+                      // Date + page
+                      React.createElement(
+                        "div",
+                        {
+                          style: {
+                            display: "flex",
+                            justifyContent: "space-between",
+                            fontSize: 11,
+                            color: PANEL_COLORS.textMuted,
+                            marginTop: 4,
+                          } as React.CSSProperties,
+                        },
+                        (() => {
+                          try {
+                            return new Date(c.aangemaakt).toLocaleDateString("nl-NL", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            });
+                          } catch {
+                            return c.aangemaakt;
+                          }
+                        })(),
+                        c.pagina && React.createElement("span", null, c.pagina)
+                      )
+                    )
+                  )
+        )
   );
 }

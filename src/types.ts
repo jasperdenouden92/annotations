@@ -1,6 +1,6 @@
-export type PanelCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+export type PanelCorner = "top-left" | "top-right" | "right-center" | "bottom-right" | "bottom-center" | "bottom-left" | "left-center";
 export type MarkerPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
-export type AnnotationType = "documentation" | "info" | "tip" | "pro" | "question" | "con" | "suggestion" | "critical" | "user-insight";
+export type AnnotationType = "documentation" | "pro" | "question" | "con" | "suggestion" | "critical" | "user-insight";
 
 export interface Annotation {
   id: string;
@@ -44,6 +44,8 @@ export interface AnnotationContextValue {
   setActiveAnnotationId: (id: string | null) => void;
   hoveredAnnotationId: string | null;
   setHoveredAnnotationId: (id: string | null) => void;
+  inspectorActive: boolean;
+  setInspectorActive: (value: boolean) => void;
   currentAnnotations: Annotation[];
   allAnnotations: Annotation[];
   pushContext: (context: string) => void;
@@ -69,6 +71,8 @@ export interface Comment {
   status: "Open" | "In behandeling" | "Opgelost";
   antwoord: string | null;
   aangemaakt: string;
+  pagina?: string;
+  label?: string;
 }
 
 export interface CommentsConfig {

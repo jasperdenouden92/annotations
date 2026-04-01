@@ -4,8 +4,11 @@ import { useComments } from "../hooks/useComments";
 import { CommentThread } from "./CommentThread";
 import { CommentForm } from "./CommentForm";
 import { getElementLabel } from "../utils/element-id";
+import { getInspectorButtonPosition, snapToCorner } from "../utils/drag";
 import { PANEL_COLORS } from "../constants";
 import { XIcon } from "../icons";
+
+const DRAG_THRESHOLD = 5;
 
 const DATA_INSPECTOR = "data-annotation-inspector";
 
@@ -20,6 +23,15 @@ function isInspectorUI(el: HTMLElement): boolean {
   let current: HTMLElement | null = el;
   while (current) {
     if (current.hasAttribute(DATA_INSPECTOR)) return true;
+    current = current.parentElement;
+  }
+  return false;
+}
+
+function isAnnotationButton(el: HTMLElement): boolean {
+  let current: HTMLElement | null = el;
+  while (current) {
+    if (current.hasAttribute("data-annotation-button")) return true;
     current = current.parentElement;
   }
   return false;
@@ -121,13 +133,14 @@ function InspectorPopover({
 }
 
 export function Inspector() {
-  const { commentsConfig, settings } = useAnnotationsSafe();
+  const { commentsConfig, settings, panelCorner, setPanelCorner, inspectorActive: active, setInspectorActive: setActive } = useAnnotationsSafe();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const [active, setActive] = useState(false);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
   const [selected, setSelected] = useState<SelectedElement | null>(null);
   const hoveredRef = useRef<HTMLElement | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef({ startX: 0, startY: 0, didDrag: false });
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
@@ -152,6 +165,14 @@ export function Inspector() {
       const el = e.target as HTMLElement;
       if (isInspectorUI(el)) return;
 
+      // Let annotation button clicks through — deactivate inspector
+      if (isAnnotationButton(el)) {
+        setActive(false);
+        setSelected(null);
+        setHoverRect(null);
+        return;
+      }
+
       e.preventDefault();
       e.stopPropagation();
 
@@ -159,14 +180,13 @@ export function Inspector() {
         console.warn(
           "[@jasperdenouden92/annotations] Annotatable component mist een id prop"
         );
-        return;
       }
 
       const rect = el.getBoundingClientRect();
       setSelected({
         el,
         rect,
-        path: el.id,
+        path: el.id || getElementLabel(el),
         label: getElementLabel(el),
       });
       setHoverRect(null);
@@ -218,36 +238,62 @@ export function Inspector() {
 
   if (!mounted || !commentsConfig) return null;
 
+  const handleButtonMouseDown = (e: React.MouseEvent) => {
+    dragRef.current = { startX: e.clientX, startY: e.clientY, didDrag: false };
+
+    const handleMouseMove = (ev: MouseEvent) => {
+      const dx = ev.clientX - dragRef.current.startX;
+      const dy = ev.clientY - dragRef.current.startY;
+      if (!dragRef.current.didDrag && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
+        dragRef.current.didDrag = true;
+        setIsDragging(true);
+      }
+      if (dragRef.current.didDrag) {
+        const corner = snapToCorner(ev.clientX, ev.clientY, window.innerWidth, window.innerHeight);
+        setPanelCorner(corner);
+      }
+    };
+
+    const handleMouseUp = () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      requestAnimationFrame(() => setIsDragging(false));
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  };
+
   // Toggle button — positioned above the AnnotationButton
   const toggleButton = React.createElement(
     "button",
     {
       [DATA_INSPECTOR]: "",
       onClick: () => {
-        setActive((prev) => !prev);
+        if (dragRef.current.didDrag) return;
+        setActive(!active);
         setSelected(null);
         setHoverRect(null);
       },
+      onMouseDown: handleButtonMouseDown,
       title: active ? "Inspector sluiten" : "Comment plaatsen",
       "aria-label": active ? "Inspector sluiten" : "Comment plaatsen",
       style: {
-        position: "fixed",
-        bottom: 72,
-        right: 24,
-        zIndex: settings.zIndex + 999,
+        ...getInspectorButtonPosition(panelCorner),
+        zIndex: settings.zIndex + 10,
         width: 40,
         height: 40,
         borderRadius: 10,
         background: active ? "#175CD3" : "#FFFFFF",
         color: active ? "#FFFFFF" : "#344054",
         border: `1px solid ${active ? "#175CD3" : "#D0D5DD"}`,
-        cursor: "pointer",
+        cursor: isDragging ? "grabbing" : "pointer",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         boxShadow:
           "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.1)",
-        transition: "all 0.15s ease",
+        transition: isDragging ? "none" : "all 0.15s ease",
         fontSize: 18,
       } as React.CSSProperties,
     },

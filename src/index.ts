@@ -11,6 +11,7 @@ export { Inspector } from "./components/Inspector";
 export { useAnnotations } from "./context/useAnnotations";
 export { useAnnotationsSafe } from "./context/useAnnotationsSafe";
 export { useComments } from "./hooks/useComments";
+export { useAllComments } from "./hooks/useAllComments";
 
 // Types
 export type {
