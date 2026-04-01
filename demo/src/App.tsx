@@ -8,11 +8,13 @@ import {
 import { annotations } from "./annotations";
 
 function DashboardCard({
+  id,
   title,
   value,
   subtitle,
   color,
 }: {
+  id?: string;
   title: string;
   value: string;
   subtitle: string;
@@ -20,6 +22,7 @@ function DashboardCard({
 }) {
   return (
     <div
+      id={id}
       style={{
         background: "#fff",
         borderRadius: 12,
@@ -68,6 +71,7 @@ export function App() {
         >
           <AnnotationMarker annotationId="2" position="top-right">
             <DashboardCard
+              id="card-omzet"
               title="Omzet"
               value="€ 24.500"
               subtitle="+12% vs vorige maand"
@@ -77,6 +81,7 @@ export function App() {
 
           <AnnotationMarker annotationId="3" position="top-right">
             <DashboardCard
+              id="card-orders"
               title="Orders"
               value="142"
               subtitle="Target: 150"
@@ -86,6 +91,7 @@ export function App() {
 
           <AnnotationMarker annotationId="4" position="top-right">
             <DashboardCard
+              id="card-acties"
               title="Openstaande acties"
               value="7"
               subtitle="3 urgent"
@@ -95,6 +101,7 @@ export function App() {
         </div>
 
         <div
+          id="activiteit"
           style={{
             background: "#fff",
             borderRadius: 12,
