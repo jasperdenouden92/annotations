@@ -189,12 +189,24 @@ export function Inspector() {
       e.preventDefault();
       e.stopPropagation();
 
-      // Walk up from clicked element to find nearest ancestor with id or data-annotation-id
+      // Walk up from clicked element to find nearest ancestor with id or data-annotation-id,
+      // but skip elements that cover most of the viewport (e.g. <div id="root">).
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
       let target: HTMLElement | null = el;
       let stableId: string | null = null;
       while (target && target !== document.body) {
         stableId = target.id || target.getAttribute("data-annotation-id");
-        if (stableId) break;
+        if (stableId) {
+          const r = target.getBoundingClientRect();
+          if (r.width > vw * 0.9 && r.height > vh * 0.9) {
+            // This element is a full-page container — skip it
+            stableId = null;
+            target = target.parentElement;
+            continue;
+          }
+          break;
+        }
         target = target.parentElement;
       }
 
