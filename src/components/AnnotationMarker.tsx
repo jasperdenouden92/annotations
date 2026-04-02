@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAnnotationsSafe } from "../context/useAnnotationsSafe";
 import { useComments } from "../hooks/useComments";
 import { CommentThread } from "./CommentThread";
 import { CommentForm } from "./CommentForm";
 import { MessageSquareTextIcon } from "../icons";
 import { PANEL_COLORS, TYPE_COLORS, TYPE_ICONS } from "../constants";
+import { getAbsolutePopoverStyle } from "../utils/popover-position";
 import type { MarkerPosition, Annotation } from "../types";
 
 interface AnnotationMarkerProps {
@@ -51,6 +52,8 @@ export function AnnotationMarker({
     registerMarkerId(annotationId);
     return () => unregisterMarkerId(annotationId);
   }, [annotationId, registerMarkerId, unregisterMarkerId]);
+
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   const isActive = activeAnnotationId === annotationId;
   const showPopover = isActive;
@@ -108,6 +111,7 @@ export function AnnotationMarker({
     React.createElement(
       "div",
       {
+        ref: wrapperRef,
         style: {
           position: "relative",
           borderRadius: 6,
@@ -195,13 +199,11 @@ export function AnnotationMarker({
           "div",
           {
             style: {
-              position: "absolute",
-              top: "100%",
-              left: 0,
-              right: 0,
+              ...(wrapperRef.current
+                ? getAbsolutePopoverStyle(wrapperRef.current.getBoundingClientRect(), 300, 460)
+                : { position: "absolute", top: "100%", left: 0, marginTop: 8 }),
               minWidth: 300,
               maxWidth: 380,
-              marginTop: 8,
               zIndex: settings.zIndex + 30,
               background: PANEL_COLORS.bg,
               border: `1px solid ${PANEL_COLORS.border}`,
