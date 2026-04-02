@@ -24,6 +24,7 @@ const NOOP_CONTEXT: AnnotationContextValue = {
   settings: DEFAULT_SETTINGS,
   commentsConfig: null,
   allComments: [],
+  currentRoute: "/",
 };
 
 export function useAnnotationsSafe(): AnnotationContextValue {

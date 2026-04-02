@@ -146,15 +146,25 @@ export function AnnotationCard({
           color: PANEL_COLORS.textMuted,
         } as React.CSSProperties,
       },
-      // Breadcrumb
+      // Breadcrumb (clickable → navigates to route)
       React.createElement(
         "span",
         {
+          onClick: (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (annotation.target && annotation.target !== "global") {
+              window.history.pushState(null, "", annotation.target);
+              window.dispatchEvent(new PopStateEvent("popstate"));
+            }
+          },
           style: {
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
             maxWidth: "60%",
+            cursor: annotation.target && annotation.target !== "global" ? "pointer" : "default",
+            textDecoration: "none",
+            borderBottom: annotation.target && annotation.target !== "global" ? "1px dashed currentColor" : "none",
           } as React.CSSProperties,
         },
         breadcrumb.join(" / ") || "global"

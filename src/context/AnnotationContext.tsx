@@ -155,6 +155,7 @@ export function AnnotationProvider({
       settings,
       commentsConfig: commentsConfig?.enabled ? commentsConfig : null,
       allComments,
+      currentRoute,
     }),
     [
       annotationMode,
@@ -172,6 +173,7 @@ export function AnnotationProvider({
       settings,
       commentsConfig,
       allComments,
+      currentRoute,
     ]
   );
 

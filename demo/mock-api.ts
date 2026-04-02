@@ -15,7 +15,7 @@ interface MockComment {
 const comments: MockComment[] = [
   {
     id: "1",
-    annotationId: "2",
+    annotationId: "card-omzet",
     auteur: "Klant A",
     comment: "Deze KPI moet nog gekoppeld worden aan de echte data bron.",
     status: "Open",
@@ -26,7 +26,7 @@ const comments: MockComment[] = [
   },
   {
     id: "2",
-    annotationId: "3",
+    annotationId: "card-orders",
     auteur: "Klant B",
     comment: "Kleur past niet bij het design systeem, graag aanpassen.",
     status: "In behandeling",
@@ -37,14 +37,14 @@ const comments: MockComment[] = [
   },
   {
     id: "3",
-    annotationId: "4",
+    annotationId: "profiel-sectie",
     auteur: "Klant C",
     comment: "De alerts moeten duidelijker zijn qua prioriteit.",
     status: "Opgelost",
     antwoord: "Is opgelost in v1.2.",
     aangemaakt: new Date(Date.now() - 259200000).toISOString(),
-    pagina: "/settings",
-    label: "Alert card",
+    pagina: "/instellingen",
+    label: "Profiel sectie",
   },
 ];
 

@@ -37,6 +37,7 @@ export function AnnotationPanel() {
     labels,
     settings,
     commentsConfig,
+    currentRoute,
   } = useAnnotations();
 
   const [view, setView] = useState<"annotations" | "feedback">("annotations");
@@ -108,10 +109,8 @@ export function AnnotationPanel() {
     return true;
   });
 
-  const currentRoute = typeof window !== "undefined" ? window.location.pathname : "/";
-  const sourceFeedback = tab === "page"
-    ? allFeedback.filter((c) => c.pagina === currentRoute || !c.pagina)
-    : allFeedback;
+  const pageFeedback = allFeedback.filter((c) => c.pagina === currentRoute || !c.pagina);
+  const sourceFeedback = tab === "page" ? pageFeedback : allFeedback;
   const filteredFeedback = sourceFeedback.filter((c) => {
     if (statusFilter.size > 0 && !statusFilter.has(c.status)) return false;
     if (searchQuery) {
@@ -247,7 +246,7 @@ export function AnnotationPanel() {
             } as React.CSSProperties,
           },
           v === "annotations" ? "Annotaties" : "Feedback",
-          v === "feedback" && allFeedback.filter((c) => c.status !== "Opgelost").length > 0
+          v === "feedback" && pageFeedback.filter((c) => c.status !== "Opgelost").length > 0
             ? React.createElement(
                 "span",
                 {
@@ -262,7 +261,7 @@ export function AnnotationPanel() {
                     padding: "1px 6px",
                   } as React.CSSProperties,
                 },
-                allFeedback.filter((c) => c.status !== "Opgelost").length
+                pageFeedback.filter((c) => c.status !== "Opgelost").length
               )
             : null
         )
@@ -283,12 +282,12 @@ export function AnnotationPanel() {
         {
           key: "page" as const,
           label: labels.tabCurrentPage,
-          count: view === "annotations" ? currentAnnotations.length : sourceFeedback.length,
+          count: view === "annotations" ? currentAnnotations.length : pageFeedback.filter((c) => statusFilter.size === 0 || statusFilter.has(c.status)).length,
         },
         {
           key: "all" as const,
           label: labels.tabAll,
-          count: view === "annotations" ? allAnnotations.length : allFeedback.length,
+          count: view === "annotations" ? allAnnotations.length : allFeedback.filter((c) => statusFilter.size === 0 || statusFilter.has(c.status)).length,
         },
       ].map((t) =>
         React.createElement(
@@ -694,32 +693,58 @@ export function AnnotationPanel() {
                             c.antwoord
                           )
                         : null,
-                      // Date + page
+                      // Footer: page path (left) + author · date (right)
                       React.createElement(
                         "div",
                         {
                           style: {
                             display: "flex",
+                            alignItems: "center",
                             justifyContent: "space-between",
                             fontSize: 11,
                             color: PANEL_COLORS.textMuted,
                             marginTop: 4,
                           } as React.CSSProperties,
                         },
-                        (() => {
-                          try {
-                            return new Date(c.aangemaakt).toLocaleDateString("nl-NL", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            });
-                          } catch {
-                            return c.aangemaakt;
-                          }
-                        })(),
-                        c.pagina && React.createElement("span", null, c.pagina)
+                        // Page path (left)
+                        React.createElement(
+                          "span",
+                          {
+                            onClick: c.pagina ? (e: React.MouseEvent) => {
+                              e.stopPropagation();
+                              window.history.pushState(null, "", c.pagina!);
+                              window.dispatchEvent(new PopStateEvent("popstate"));
+                            } : undefined,
+                            style: {
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              maxWidth: "60%",
+                              cursor: c.pagina ? "pointer" : "default",
+                              borderBottom: c.pagina ? "1px dashed currentColor" : "none",
+                            } as React.CSSProperties,
+                          },
+                          c.pagina
+                            ? c.pagina.replace(/^\//, "").split("/").filter(Boolean).join(" / ") || "global"
+                            : ""
+                        ),
+                        // Author · date (right)
+                        React.createElement(
+                          "span",
+                          { style: { flexShrink: 0 } as React.CSSProperties },
+                          `${c.auteur} · ${(() => {
+                            try {
+                              return new Date(c.aangemaakt).toLocaleDateString("nl-NL", {
+                                day: "numeric",
+                                month: "short",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              });
+                            } catch {
+                              return c.aangemaakt;
+                            }
+                          })()}`
+                        )
                       )
                     )
                   )
