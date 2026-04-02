@@ -3,6 +3,7 @@ import { Client } from "@notionhq/client";
 
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 const DATABASE_ID = process.env.NOTION_DATABASE_ID!;
+const PROJECT_ID = process.env.NOTION_PROJECT_ID;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -14,27 +15,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === "GET") {
-    const { project, annotationId } = req.query;
-
-    if (!project || !annotationId) {
-      return res.status(400).json({ error: "project and annotationId are required" });
-    }
+    const { annotationId } = req.query;
 
     try {
+      const filters: any[] = [];
+
+      if (PROJECT_ID) {
+        filters.push({
+          property: "Project",
+          relation: { contains: PROJECT_ID },
+        });
+      }
+
+      if (annotationId) {
+        filters.push({
+          property: "Annotatie ID",
+          rich_text: { equals: annotationId as string },
+        });
+      }
+
       const response = await notion.databases.query({
         database_id: DATABASE_ID,
-        filter: {
-          and: [
-            {
-              property: "Project",
-              rich_text: { equals: project as string },
-            },
-            {
-              property: "Annotatie ID",
-              rich_text: { equals: annotationId as string },
-            },
-          ],
-        },
+        ...(filters.length > 0 ? { filter: { and: filters } } : {}),
         sorts: [{ property: "Aangemaakt", direction: "ascending" }],
       });
 
@@ -45,6 +47,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         status: page.properties["Status"]?.status?.name ?? "Open",
         antwoord: page.properties["Antwoord"]?.rich_text?.[0]?.plain_text ?? null,
         aangemaakt: page.properties["Aangemaakt"]?.created_time ?? "",
+        pagina: page.properties["Pagina"]?.rich_text?.[0]?.plain_text ?? undefined,
+        label: page.properties["Label"]?.rich_text?.[0]?.plain_text ?? undefined,
+        annotationId: page.properties["Annotatie ID"]?.rich_text?.[0]?.plain_text ?? undefined,
       }));
 
       return res.status(200).json(comments);
@@ -55,10 +60,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === "POST") {
-    const { project, annotationId, auteur, comment, pagina, label } = req.body ?? {};
+    const { annotationId, auteur, comment, pagina, label } = req.body ?? {};
 
-    if (!project || !annotationId || !auteur || !comment) {
-      return res.status(400).json({ error: "project, annotationId, auteur, and comment are required" });
+    if (!annotationId || !auteur || !comment) {
+      return res.status(400).json({ error: "annotationId, auteur, and comment are required" });
     }
 
     try {
@@ -68,9 +73,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           "Naam": {
             title: [{ text: { content: `${auteur} — ${annotationId}` } }],
           },
-          "Project": {
-            rich_text: [{ text: { content: project } }],
-          },
+          ...(PROJECT_ID
+            ? {
+                "Project": {
+                  relation: [{ id: PROJECT_ID }],
+                },
+              }
+            : {}),
           "Annotatie ID": {
             rich_text: [{ text: { content: annotationId } }],
           },
