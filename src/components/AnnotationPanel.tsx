@@ -728,11 +728,11 @@ export function AnnotationPanel() {
                             ? c.pagina.replace(/^\//, "").split("/").filter(Boolean).join(" / ") || "global"
                             : ""
                         ),
-                        // Author · date (right)
+                        // Date (right)
                         React.createElement(
                           "span",
                           { style: { flexShrink: 0 } as React.CSSProperties },
-                          `${c.auteur} · ${(() => {
+                          (() => {
                             try {
                               return new Date(c.aangemaakt).toLocaleDateString("nl-NL", {
                                 day: "numeric",
@@ -743,7 +743,7 @@ export function AnnotationPanel() {
                             } catch {
                               return c.aangemaakt;
                             }
-                          })()}`
+                          })()
                         )
                       )
                     )
