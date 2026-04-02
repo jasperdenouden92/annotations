@@ -28,6 +28,7 @@ export function FeedbackMarkers() {
     setActiveAnnotationId,
     activeAnnotationId,
     setPanelOpen,
+    currentRoute,
   } = useAnnotationsSafe();
 
   const [badges, setBadges] = useState<FeedbackBadgeInfo[]>([]);
@@ -46,9 +47,11 @@ export function FeedbackMarkers() {
     }
 
     // Group comments by annotationId, excluding those handled by AnnotationMarker
+    // and filtering to current page only
     const grouped = new Map<string, Comment[]>();
     for (const c of allComments) {
       if (!c.annotationId || annotationMarkerIds.has(c.annotationId)) continue;
+      if (c.pagina && c.pagina !== currentRoute) continue;
       const list = grouped.get(c.annotationId) || [];
       list.push(c);
       grouped.set(c.annotationId, list);
@@ -71,7 +74,7 @@ export function FeedbackMarkers() {
     }
 
     setBadges(newBadges);
-  }, [allComments, annotationMarkerIds.size, commentsConfig, showMarkers]);
+  }, [allComments, annotationMarkerIds.size, commentsConfig, showMarkers, currentRoute]);
 
   // Update positions on mount, scroll, resize, and when comments change
   useEffect(() => {

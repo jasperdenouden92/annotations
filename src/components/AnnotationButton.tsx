@@ -17,6 +17,7 @@ export function AnnotationButton() {
     panelCorner,
     setPanelCorner,
     currentAnnotations,
+    currentRoute,
     labels,
     settings,
     commentsConfig,
@@ -60,7 +61,9 @@ export function AnnotationButton() {
 
   if (!mounted) return null;
 
-  const openFeedbackCount = allFeedback.filter((c) => c.status !== "Opgelost").length;
+  const openFeedbackCount = allFeedback.filter(
+    (c) => c.status !== "Opgelost" && (c.pagina === currentRoute || !c.pagina)
+  ).length;
   const totalCount = currentAnnotations.length + openFeedbackCount;
 
   const handleClick = () => {

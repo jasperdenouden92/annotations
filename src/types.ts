@@ -54,6 +54,7 @@ export interface AnnotationContextValue {
   settings: Required<AnnotationSettings>;
   commentsConfig: CommentsConfig | null;
   allComments: Comment[];
+  currentRoute: string;
 }
 
 export interface AnnotationProviderProps {

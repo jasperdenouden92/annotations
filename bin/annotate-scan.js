@@ -62,7 +62,6 @@ function findFiles(dir, extensions) {
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      // Skip common non-component directories
       if (["node_modules", ".next", ".git", "dist", "build", ".turbo"].includes(entry.name)) continue;
       results.push(...findFiles(fullPath, extensions));
     } else if (extensions.some((ext) => entry.name.endsWith(ext))) {
@@ -81,7 +80,6 @@ function slugify(text) {
 
 function getComponentName(filePath) {
   const base = path.basename(filePath, path.extname(filePath));
-  // page.tsx → use parent dir name
   if (base === "page" || base === "layout") {
     return path.basename(path.dirname(filePath));
   }
@@ -92,14 +90,12 @@ function isPageFile(filePath) {
   return PAGE_PATTERNS.some((p) => p.test(filePath));
 }
 
+// ── Scanning ────────────────────────────────────────────────────────────────
+
 function scanFile(filePath, rootDir) {
   const content = fs.readFileSync(filePath, "utf-8");
   const relativePath = path.relative(rootDir, filePath);
   const componentName = getComponentName(filePath);
-
-  const hasAnnotationMarker = content.includes("<AnnotationMarker") || content.includes("AnnotationMarker");
-  const hasAnnotatable = content.includes("<Annotatable") || content.includes("Annotatable");
-  const isAlreadyAnnotated = hasAnnotationMarker || hasAnnotatable;
 
   const suggestions = [];
 
@@ -115,20 +111,27 @@ function scanFile(filePath, rootDir) {
 
   // Scan for UI patterns
   for (const { pattern, label } of UI_PATTERNS) {
-    // Reset regex state
     pattern.lastIndex = 0;
     let match;
     while ((match = pattern.exec(content)) !== null) {
-      // Find the line number
       const linesBefore = content.slice(0, match.index).split("\n");
       const lineNum = linesBefore.length;
       const matchedTag = match[0].replace("<", "").trim();
+      const lineContent = content.split("\n")[lineNum - 1] || "";
+
+      // Check if this element already has a data-annotation-id
+      // Look ahead from the match to find the closing > of this tag
+      const tagStart = match.index;
+      const tagEnd = content.indexOf(">", tagStart);
+      const tagSlice = tagEnd !== -1 ? content.slice(tagStart, tagEnd + 1) : "";
+      const alreadyHasId = tagSlice.includes("data-annotation-id");
 
       suggestions.push({
         type: label,
         component: matchedTag,
         line: lineNum,
-        context: content.split("\n")[lineNum - 1]?.trim().slice(0, 80) || "",
+        context: lineContent.trim().slice(0, 80),
+        alreadyHasId,
       });
     }
   }
@@ -139,185 +142,32 @@ function scanFile(filePath, rootDir) {
     filePath,
     relativePath,
     componentName,
-    isAlreadyAnnotated,
     suggestions,
     content,
   };
 }
 
-// ── JSX modification ────────────────────────────────────────────────────────
+// ── Adding data-annotation-id to elements ───────────────────────────────────
 
-function addImportIfNeeded(content) {
-  if (content.includes("AnnotationMarker")) return content;
-
-  // Find the last import statement
-  const importRegex = /^import\s.+$/gm;
-  let lastImport = null;
-  let match;
-  while ((match = importRegex.exec(content)) !== null) {
-    lastImport = match;
-  }
-
-  const importLine = 'import { AnnotationMarker } from "@jasperdenouden92/annotations";';
-
-  if (lastImport) {
-    const insertAt = lastImport.index + lastImport[0].length;
-    return content.slice(0, insertAt) + "\n" + importLine + content.slice(insertAt);
-  }
-
-  return importLine + "\n" + content;
-}
-
-function wrapElement(content, suggestion, annotationId) {
+function addIdToElement(content, suggestion, annotationId) {
   const lines = content.split("\n");
   const lineIndex = suggestion.line - 1;
   const line = lines[lineIndex];
   if (!line) return content;
 
-  const indent = line.match(/^(\s*)/)?.[1] || "";
-
-  // Find the JSX tag in this line
-  const tagMatch = line.match(new RegExp(`(<${suggestion.component.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`));
+  // Find the tag opening in this line
+  const escapedComponent = suggestion.component.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const tagMatch = line.match(new RegExp(`(<${escapedComponent})(\\s|>|/>|$)`));
   if (!tagMatch) return content;
 
-  // Check if self-closing tag on same line
-  const isSelfClosing = line.includes("/>");
-  if (isSelfClosing) {
-    // Wrap single line: <Card ... /> → <AnnotationMarker annotationId="x"><Card ... /></AnnotationMarker>
-    lines[lineIndex] =
-      `${indent}<AnnotationMarker annotationId="${annotationId}">\n` +
-      `${indent}  ${line.trim()}\n` +
-      `${indent}</AnnotationMarker>`;
-  } else {
-    // Find closing tag
-    const tagName = suggestion.component;
-    let depth = 0;
-    let closeLineIndex = -1;
+  // Insert data-annotation-id after the tag name
+  const insertPos = tagMatch.index + tagMatch[1].length;
+  const before = line.slice(0, insertPos);
+  const after = line.slice(insertPos);
 
-    for (let i = lineIndex; i < lines.length; i++) {
-      const l = lines[i];
-      // Count opening tags (but not self-closing)
-      const opens = (l.match(new RegExp(`<${tagName}[\\s>]`, "g")) || []).length;
-      const selfCloses = (l.match(new RegExp(`<${tagName}[^>]*/>`, "g")) || []).length;
-      const closes = (l.match(new RegExp(`</${tagName}>`, "g")) || []).length;
-
-      depth += opens - selfCloses - closes;
-      if (depth <= 0 && i >= lineIndex) {
-        closeLineIndex = i;
-        break;
-      }
-    }
-
-    if (closeLineIndex === -1) {
-      // Can't find closing tag — wrap just this line
-      lines[lineIndex] = `${indent}<AnnotationMarker annotationId="${annotationId}">\n${line}`;
-      // Insert closing after same line
-      lines.splice(lineIndex + 1, 0, `${indent}</AnnotationMarker>`);
-    } else {
-      // Wrap opening → closing
-      lines[lineIndex] = `${indent}<AnnotationMarker annotationId="${annotationId}">\n${line}`;
-      lines[closeLineIndex] = `${lines[closeLineIndex]}\n${indent}</AnnotationMarker>`;
-    }
-  }
+  lines[lineIndex] = `${before} data-annotation-id="${annotationId}"${after}`;
 
   return lines.join("\n");
-}
-
-// ── Annotation data file ────────────────────────────────────────────────────
-
-function getAnnotationsFilePath(rootDir) {
-  // Check common locations
-  const candidates = [
-    path.join(rootDir, "src", "annotations", "data.ts"),
-    path.join(rootDir, "src", "annotations", "config.ts"),
-    path.join(rootDir, "src", "config", "annotations.ts"),
-  ];
-
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) return candidate;
-  }
-
-  // Default: create src/annotations/data.ts
-  return path.join(rootDir, "src", "annotations", "data.ts");
-}
-
-function readExistingAnnotations(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-
-  const content = fs.readFileSync(filePath, "utf-8");
-  const ids = [];
-  const idRegex = /id:\s*["']([^"']+)["']/g;
-  let match;
-  while ((match = idRegex.exec(content)) !== null) {
-    ids.push(match[1]);
-  }
-  return ids;
-}
-
-function generateAnnotationEntry(id, suggestion, componentName, route) {
-  return {
-    id,
-    target: route,
-    title: `${suggestion.type}: ${componentName}`,
-    body: `Annotatie voor ${suggestion.type} in ${componentName}`,
-    author: "annotate-scan",
-    date: new Date().toISOString().split("T")[0],
-    type: "documentation",
-  };
-}
-
-function writeAnnotationsFile(filePath, entries) {
-  const dir = path.dirname(filePath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-
-  if (fs.existsSync(filePath)) {
-    // Append to existing array
-    let content = fs.readFileSync(filePath, "utf-8");
-
-    // Find the closing bracket of the array
-    const arrayEnd = content.lastIndexOf("]");
-    if (arrayEnd !== -1) {
-      const newEntries = entries
-        .map(
-          (e) =>
-            `  {\n    id: "${e.id}",\n    target: "${e.target}",\n    title: "${e.title}",\n    body: "${e.body}",\n    author: "${e.author}",\n    date: "${e.date}",\n    type: "${e.type}",\n  }`
-        )
-        .join(",\n");
-
-      // Check if array has items already (needs comma)
-      const beforeEnd = content.slice(0, arrayEnd).trimEnd();
-      const needsComma = beforeEnd.endsWith("}") || beforeEnd.endsWith(",");
-
-      content =
-        content.slice(0, arrayEnd) +
-        (needsComma && !beforeEnd.endsWith(",") ? ",\n" : "\n") +
-        newEntries +
-        "\n" +
-        content.slice(arrayEnd);
-
-      fs.writeFileSync(filePath, content, "utf-8");
-      return;
-    }
-  }
-
-  // Create new file
-  const entriesStr = entries
-    .map(
-      (e) =>
-        `  {\n    id: "${e.id}",\n    target: "${e.target}",\n    title: "${e.title}",\n    body: "${e.body}",\n    author: "${e.author}",\n    date: "${e.date}",\n    type: "${e.type}" as const,\n  }`
-    )
-    .join(",\n");
-
-  const content = `import type { Annotation } from "@jasperdenouden92/annotations";
-
-export const annotations: Annotation[] = [
-${entriesStr}
-];
-`;
-
-  fs.writeFileSync(filePath, content, "utf-8");
 }
 
 // ── Interactive prompt ──────────────────────────────────────────────────────
@@ -335,6 +185,21 @@ function ask(question) {
   });
 }
 
+// ── Collect all existing IDs in the project ─────────────────────────────────
+
+function collectExistingIds(files) {
+  const ids = new Set();
+  for (const filePath of files) {
+    const content = fs.readFileSync(filePath, "utf-8");
+    const regex = /data-annotation-id=["']([^"']+)["']/g;
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      ids.add(match[1]);
+    }
+  }
+  return ids;
+}
+
 // ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -343,7 +208,7 @@ async function main() {
   const srcDir = path.join(rootDir, "src");
 
   console.log("");
-  console.log(c("bold", "  📋 annotate-scan"));
+  console.log(c("bold", "  🏷️  annotate-scan"));
   console.log(c("dim", `  Scanning ${path.relative(process.cwd(), srcDir) || "src/"}...\n`));
 
   if (!fs.existsSync(srcDir)) {
@@ -364,31 +229,36 @@ async function main() {
   const results = files.map((f) => scanFile(f, rootDir)).filter(Boolean);
 
   if (results.length === 0) {
-    console.log(c("green", "  ✓ Geen annoteerbare UI-secties gevonden. Alles ziet er goed uit!\n"));
+    console.log(c("green", "  ✓ Geen UI-elementen gevonden om te labelen.\n"));
     process.exit(0);
   }
 
   // Display results
-  let totalSuggestions = 0;
-  let alreadyAnnotated = 0;
+  let newSuggestions = 0;
+  let alreadyLabeled = 0;
 
   for (const result of results) {
-    const statusIcon = result.isAlreadyAnnotated ? c("green", "✓") : c("yellow", "○");
-    console.log(`  ${statusIcon} ${c("bold", result.relativePath)}`);
-
-    if (result.isAlreadyAnnotated) {
-      console.log(c("dim", "    Heeft al AnnotationMarker imports\n"));
-      alreadyAnnotated++;
+    const hasNew = result.suggestions.some((s) => !s.alreadyHasId);
+    if (!hasNew) {
+      alreadyLabeled++;
       continue;
     }
 
+    console.log(`  ${c("yellow", "○")} ${c("bold", result.relativePath)}`);
+
     for (const s of result.suggestions) {
-      totalSuggestions++;
-      console.log(
-        `    ${c("cyan", `[${s.type}]`)} ${c("bold", s.component)} ${c("dim", `(regel ${s.line})`)}`
-      );
-      if (s.context) {
-        console.log(`    ${c("dim", s.context)}`);
+      if (s.alreadyHasId) {
+        console.log(
+          `    ${c("green", "✓")} ${c("dim", `[${s.type}]`)} ${c("dim", s.component)} ${c("dim", "(heeft al id)")}`
+        );
+      } else {
+        newSuggestions++;
+        console.log(
+          `    ${c("cyan", `[${s.type}]`)} ${c("bold", s.component)} ${c("dim", `(regel ${s.line})`)}`
+        );
+        if (s.context) {
+          console.log(`    ${c("dim", s.context)}`);
+        }
       }
     }
     console.log("");
@@ -397,21 +267,21 @@ async function main() {
   // Summary
   console.log(c("dim", "  ─────────────────────────────────────────"));
   console.log(
-    `  ${c("bold", String(totalSuggestions))} suggesties in ${c("bold", String(results.length - alreadyAnnotated))} bestanden`
+    `  ${c("bold", String(newSuggestions))} elementen zonder id gevonden`
   );
-  if (alreadyAnnotated > 0) {
-    console.log(`  ${c("green", String(alreadyAnnotated))} bestanden al geannoteerd`);
+  if (alreadyLabeled > 0) {
+    console.log(`  ${c("green", String(alreadyLabeled))} bestanden al volledig gelabeld`);
   }
   console.log("");
 
-  if (totalSuggestions === 0) {
-    console.log(c("green", "  ✓ Alle UI-secties zijn al geannoteerd!\n"));
+  if (newSuggestions === 0) {
+    console.log(c("green", "  ✓ Alle UI-elementen hebben al een data-annotation-id!\n"));
     process.exit(0);
   }
 
   // Ask to auto-apply
   const answer = await ask(
-    `  ${c("yellow", "?")} Wil je dat ik deze markers automatisch toevoeg? ${c("dim", "(ja/nee)")} `
+    `  ${c("yellow", "?")} Wil je dat ik stabiele id's toevoeg aan deze elementen? ${c("dim", "(ja/nee)")} `
   );
 
   if (answer !== "ja" && answer !== "j" && answer !== "yes" && answer !== "y") {
@@ -421,80 +291,46 @@ async function main() {
 
   console.log("");
 
-  // Apply changes
-  const annotationsFile = getAnnotationsFilePath(rootDir);
-  const existingIds = readExistingAnnotations(annotationsFile);
-  const newAnnotationEntries = [];
+  // Collect existing IDs to avoid duplicates
+  const existingIds = collectExistingIds(files);
   let filesModified = 0;
+  let idsAdded = 0;
 
   for (const result of results) {
-    if (result.isAlreadyAnnotated) continue;
+    const newItems = result.suggestions.filter((s) => !s.alreadyHasId);
+    if (newItems.length === 0) continue;
 
     let content = result.content;
-    let modified = false;
-
-    // Add import first, then track the line offset it introduces
-    const hadImport = content.includes("AnnotationMarker");
-    content = addImportIfNeeded(content);
-    const lineOffset = hadImport ? 0 : 1;
 
     // Process suggestions in reverse line order to preserve line numbers
-    const sorted = [...result.suggestions].sort((a, b) => b.line - a.line);
+    const sorted = [...newItems].sort((a, b) => b.line - a.line);
 
     for (const suggestion of sorted) {
       const baseId = slugify(`${result.componentName}-${suggestion.type}`);
       let annotationId = baseId;
       let counter = 2;
-      while (existingIds.includes(annotationId)) {
+      while (existingIds.has(annotationId)) {
         annotationId = `${baseId}-${counter}`;
         counter++;
       }
-      existingIds.push(annotationId);
+      existingIds.add(annotationId);
 
-      // Determine route from file path
-      let route = "/";
-      const relPath = result.relativePath;
-      if (relPath.includes("/app/")) {
-        const routePart = relPath.split("/app/")[1]?.replace(/\/page\.(tsx|jsx)$/, "") || "";
-        route = "/" + routePart.replace(/\([^)]+\)\/?/g, "");
-      } else if (relPath.includes("/pages/")) {
-        const routePart = relPath.split("/pages/")[1]?.replace(/\.(tsx|jsx)$/, "") || "";
-        route = "/" + routePart.replace(/index$/, "");
-      }
-      if (route !== "/" && route.endsWith("/")) route = route.slice(0, -1);
-
-      // Adjust line number for the added import line
-      const adjusted = { ...suggestion, line: suggestion.line + lineOffset };
-      content = wrapElement(content, adjusted, annotationId);
-
-      newAnnotationEntries.push(
-        generateAnnotationEntry(annotationId, suggestion, result.componentName, route)
-      );
-
-      modified = true;
+      content = addIdToElement(content, suggestion, annotationId);
+      idsAdded++;
     }
 
-    if (modified) {
-      fs.writeFileSync(result.filePath, content, "utf-8");
-      filesModified++;
-      console.log(`  ${c("green", "✓")} ${result.relativePath}`);
-    }
-  }
-
-  // Write annotation data
-  if (newAnnotationEntries.length > 0) {
-    writeAnnotationsFile(annotationsFile, newAnnotationEntries);
-    const relAnnotationsPath = path.relative(rootDir, annotationsFile);
-    console.log(`\n  ${c("green", "✓")} ${newAnnotationEntries.length} annotaties toegevoegd aan ${c("bold", relAnnotationsPath)}`);
+    fs.writeFileSync(result.filePath, content, "utf-8");
+    filesModified++;
+    console.log(`  ${c("green", "✓")} ${result.relativePath}`);
   }
 
   console.log(
-    `\n  ${c("green", "Klaar!")} ${filesModified} bestanden aangepast, ${newAnnotationEntries.length} markers toegevoegd.\n`
+    `\n  ${c("green", "Klaar!")} ${filesModified} bestanden aangepast, ${idsAdded} id's toegevoegd.\n`
   );
 
-  // Hint
-  console.log(c("dim", "  Tip: Pas de titels en beschrijvingen aan in het annotatie-bestand."));
-  console.log(c("dim", "  Tip: Gebruik annotationId als id-attribuut op je elementen voor stabiele markers.\n"));
+  console.log(c("dim", "  Elementen hebben nu een stabiel data-annotation-id attribuut."));
+  console.log(c("dim", "  De feedback-inspector herkent deze id's automatisch."));
+  console.log(c("dim", "  Annotaties kun je later handmatig toevoegen met AnnotationMarker.\n"));
 }
 
 main().catch((err) => {
