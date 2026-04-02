@@ -6,6 +6,7 @@ import { CommentForm } from "./CommentForm";
 import { getElementLabel, getElementPath } from "../utils/element-id";
 import { getInspectorButtonPosition, snapToCorner } from "../utils/drag";
 import { PANEL_COLORS } from "../constants";
+import { getFixedPopoverStyle } from "../utils/popover-position";
 import { XIcon } from "../icons";
 
 const DRAG_THRESHOLD = 5;
@@ -65,18 +66,8 @@ function InspectorPopover({
     enabled: !!commentsConfig,
   });
 
-  // Position: prefer below the element, but flip up if not enough space
-  const viewportH = window.innerHeight;
-  const spaceBelow = viewportH - selected.rect.bottom;
-  const placeBelow = spaceBelow > 240;
-
   const style: React.CSSProperties = {
-    position: "fixed",
-    left: Math.min(selected.rect.left, window.innerWidth - 340),
-    top: placeBelow ? selected.rect.bottom + 8 : undefined,
-    bottom: placeBelow ? undefined : viewportH - selected.rect.top + 8,
-    width: 320,
-    maxHeight: 420,
+    ...getFixedPopoverStyle(selected.rect, 320, 420),
     overflowY: "auto",
     zIndex: settings.zIndex + 50,
     background: PANEL_COLORS.bg,
