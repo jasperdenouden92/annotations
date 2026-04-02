@@ -42,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         id: page.id,
         auteur: page.properties["Auteur"]?.rich_text?.[0]?.plain_text ?? "",
         comment: page.properties["Comment"]?.rich_text?.[0]?.plain_text ?? "",
-        status: page.properties["Status"]?.select?.name ?? "Open",
+        status: page.properties["Status"]?.status?.name ?? "Open",
         antwoord: page.properties["Antwoord"]?.rich_text?.[0]?.plain_text ?? null,
         aangemaakt: page.properties["Aangemaakt"]?.created_time ?? "",
       }));
@@ -81,7 +81,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             rich_text: [{ text: { content: auteur } }],
           },
           "Status": {
-            select: { name: "Open" },
+            status: { name: "Open" },
           },
           ...(pagina
             ? {
