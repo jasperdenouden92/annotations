@@ -42,7 +42,15 @@ export function AnnotationMarker({
     commentsConfig,
     allAnnotations,
     allComments,
+    registerMarkerId,
+    unregisterMarkerId,
   } = useAnnotationsSafe();
+
+  // Register this marker so AutoAnnotationMarkers skips it
+  useEffect(() => {
+    registerMarkerId(annotationId);
+    return () => unregisterMarkerId(annotationId);
+  }, [annotationId, registerMarkerId, unregisterMarkerId]);
 
   const isActive = activeAnnotationId === annotationId;
   const showPopover = isActive;
