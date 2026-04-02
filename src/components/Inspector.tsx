@@ -180,28 +180,46 @@ export function Inspector() {
       e.preventDefault();
       e.stopPropagation();
 
-      // Walk up from clicked element to find nearest ancestor with id or data-annotation-id,
-      // but skip elements that cover most of the viewport (e.g. <div id="root">).
+      // Walk up from clicked element to find nearest ancestor with a stable identifier.
+      // Priority: data-annotation-id > id attribute > CSS selector path.
+      // Skip elements that cover most of the viewport (e.g. <div id="root">).
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       let target: HTMLElement | null = el;
       let stableId: string | null = null;
-      while (target && target !== document.body) {
-        stableId = target.id || target.getAttribute("data-annotation-id");
-        if (stableId) {
-          const r = target.getBoundingClientRect();
-          if (r.width > vw * 0.9 && r.height > vh * 0.9) {
-            // This element is a full-page container — skip it
-            stableId = null;
-            target = target.parentElement;
-            continue;
+
+      // Pass 1: prefer data-annotation-id (predefined annotation markers)
+      let walk: HTMLElement | null = el;
+      while (walk && walk !== document.body) {
+        const annotationId = walk.getAttribute("data-annotation-id");
+        if (annotationId) {
+          const r = walk.getBoundingClientRect();
+          if (!(r.width > vw * 0.9 && r.height > vh * 0.9)) {
+            stableId = annotationId;
+            target = walk;
+            break;
           }
-          break;
         }
-        target = target.parentElement;
+        walk = walk.parentElement;
       }
 
-      // If no stable ID found, fall back to CSS selector path
+      // Pass 2: fall back to element id attribute
+      if (!stableId) {
+        walk = el;
+        while (walk && walk !== document.body) {
+          if (walk.id) {
+            const r = walk.getBoundingClientRect();
+            if (!(r.width > vw * 0.9 && r.height > vh * 0.9)) {
+              stableId = walk.id;
+              target = walk;
+              break;
+            }
+          }
+          walk = walk.parentElement;
+        }
+      }
+
+      // Pass 3: fall back to CSS selector path
       if (!stableId || !target) {
         target = el;
         stableId = getElementPath(el);
