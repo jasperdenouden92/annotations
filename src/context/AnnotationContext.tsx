@@ -1,4 +1,4 @@
-import React, { createContext, useState, useCallback, useEffect, useMemo, useRef } from "react";
+import React, { createContext, useState, useCallback, useEffect, useMemo, useRef, useReducer } from "react";
 import type {
   AnnotationContextValue,
   AnnotationProviderProps,
@@ -8,6 +8,7 @@ import { DEFAULT_LABELS, DEFAULT_SETTINGS, STORAGE_KEY_PANEL_CORNER } from "../c
 import { matchRoute } from "../utils/route-matching";
 import { Inspector } from "../components/Inspector";
 import { FeedbackMarkers } from "../components/FeedbackMarkers";
+import { AutoAnnotationMarkers } from "../components/AutoAnnotationMarkers";
 import { useAllComments } from "../hooks/useAllComments";
 
 export const AnnotationContext = createContext<AnnotationContextValue | null>(null);
@@ -113,6 +114,31 @@ export function AnnotationProvider({
     return () => window.removeEventListener("keydown", handler);
   }, [settings.keyboardShortcut]);
 
+  // Track which annotation IDs are rendered by AnnotationMarker wrappers
+  const [registeredMarkerIds, setRegisteredMarkerIds] = useState<Set<string>>(() => new Set());
+  // Force re-render counter so consumers see registration changes
+  const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
+
+  const registerMarkerId = useCallback((id: string) => {
+    setRegisteredMarkerIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+    forceUpdate();
+  }, []);
+
+  const unregisterMarkerId = useCallback((id: string) => {
+    setRegisteredMarkerIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    forceUpdate();
+  }, []);
+
   const { comments: allComments } = useAllComments({
     apiBase: commentsConfig?.apiBase ?? "",
     project: commentsConfig?.project ?? "",
@@ -156,6 +182,9 @@ export function AnnotationProvider({
       commentsConfig: commentsConfig?.enabled ? commentsConfig : null,
       allComments,
       currentRoute,
+      registeredMarkerIds,
+      registerMarkerId,
+      unregisterMarkerId,
     }),
     [
       annotationMode,
@@ -174,6 +203,9 @@ export function AnnotationProvider({
       commentsConfig,
       allComments,
       currentRoute,
+      registeredMarkerIds,
+      registerMarkerId,
+      unregisterMarkerId,
     ]
   );
 
@@ -182,6 +214,7 @@ export function AnnotationProvider({
     { value },
     children,
     mounted && commentsConfig?.enabled ? React.createElement(Inspector) : null,
-    mounted && commentsConfig?.enabled ? React.createElement(FeedbackMarkers) : null
+    mounted && commentsConfig?.enabled ? React.createElement(FeedbackMarkers) : null,
+    mounted ? React.createElement(AutoAnnotationMarkers) : null
   );
 }

@@ -22,13 +22,13 @@ export function FeedbackMarkers() {
     annotationMode,
     inspectorActive,
     allComments,
-    allAnnotations,
     commentsConfig,
     settings,
     setActiveAnnotationId,
     activeAnnotationId,
     setPanelOpen,
     currentRoute,
+    registeredMarkerIds,
   } = useAnnotationsSafe();
 
   const [badges, setBadges] = useState<FeedbackBadgeInfo[]>([]);
@@ -36,9 +36,6 @@ export function FeedbackMarkers() {
   useEffect(() => setMounted(true), []);
 
   const showMarkers = mounted && (annotationMode || inspectorActive);
-
-  // Get the set of annotationIds that are handled by AnnotationMarker components
-  const annotationMarkerIds = new Set(allAnnotations.map((a) => a.id));
 
   const updateBadges = useCallback(() => {
     if (!commentsConfig || !showMarkers) {
@@ -50,7 +47,7 @@ export function FeedbackMarkers() {
     // and filtering to current page only
     const grouped = new Map<string, Comment[]>();
     for (const c of allComments) {
-      if (!c.annotationId || annotationMarkerIds.has(c.annotationId)) continue;
+      if (!c.annotationId || registeredMarkerIds.has(c.annotationId)) continue;
       if (c.pagina && c.pagina !== currentRoute) continue;
       const list = grouped.get(c.annotationId) || [];
       list.push(c);
@@ -74,7 +71,7 @@ export function FeedbackMarkers() {
     }
 
     setBadges(newBadges);
-  }, [allComments, annotationMarkerIds.size, commentsConfig, showMarkers, currentRoute]);
+  }, [allComments, registeredMarkerIds, commentsConfig, showMarkers, currentRoute]);
 
   // Update positions on mount, scroll, resize, and when comments change
   useEffect(() => {

@@ -55,6 +55,9 @@ export interface AnnotationContextValue {
   commentsConfig: CommentsConfig | null;
   allComments: Comment[];
   currentRoute: string;
+  registeredMarkerIds: Set<string>;
+  registerMarkerId: (id: string) => void;
+  unregisterMarkerId: (id: string) => void;
 }
 
 export interface AnnotationProviderProps {

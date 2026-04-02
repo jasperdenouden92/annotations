@@ -25,6 +25,9 @@ const NOOP_CONTEXT: AnnotationContextValue = {
   commentsConfig: null,
   allComments: [],
   currentRoute: "/",
+  registeredMarkerIds: new Set(),
+  registerMarkerId: () => {},
+  unregisterMarkerId: () => {},
 };
 
 export function useAnnotationsSafe(): AnnotationContextValue {
