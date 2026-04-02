@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAnnotationsSafe } from "../context/useAnnotationsSafe";
+import { useComments } from "../hooks/useComments";
+import { CommentThread } from "./CommentThread";
+import { CommentForm } from "./CommentForm";
 import { findElementByAnnotationId } from "../utils/find-element";
 import { showHoverHighlight, removeHoverHighlight } from "../utils/find-element";
 import { MessageSquareTextIcon } from "../icons";
-import { TYPE_COLORS, TYPE_ICONS } from "../constants";
+import { PANEL_COLORS, TYPE_COLORS, TYPE_ICONS } from "../constants";
+import { getFixedPopoverStyle } from "../utils/popover-position";
 import type { Annotation } from "../types";
 
 interface AutoBadgeInfo {
@@ -39,6 +43,21 @@ export function AutoAnnotationMarkers() {
   const [badges, setBadges] = useState<AutoBadgeInfo[]>([]);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  // Find the active auto-badge (if any) for popover rendering
+  const activeBadge = activeAnnotationId
+    ? badges.find((b) => b.annotation.id === activeAnnotationId)
+    : undefined;
+  const activeAnnotation = activeBadge?.annotation;
+  const activeAnnotationLabel = activeAnnotation?.title ?? activeAnnotationId ?? "";
+
+  const { comments, isLoading, error, submitComment } = useComments({
+    apiBase: commentsConfig?.apiBase ?? "",
+    project: commentsConfig?.project ?? "",
+    annotationId: activeAnnotationId ?? "",
+    label: activeAnnotationLabel,
+    enabled: !!commentsConfig && !!activeBadge,
+  });
 
   const showMarkers = mounted && (annotationMode || inspectorActive);
 
@@ -231,6 +250,158 @@ export function AutoAnnotationMarkers() {
         )
       );
     }
+  }
+
+  // Popover for active auto-discovered annotation
+  if (activeBadge && activeAnnotation) {
+    const annotationType = activeAnnotation.type ?? "documentation";
+    const popoverTypeColor = TYPE_COLORS[annotationType];
+    const PopoverTypeIcon = TYPE_ICONS[annotationType];
+
+    elements.push(
+      React.createElement(
+        "div",
+        {
+          key: `auto-popover-${activeAnnotation.id}`,
+          style: {
+            ...getFixedPopoverStyle(activeBadge.rect, 300, 460),
+            minWidth: 300,
+            maxWidth: 380,
+            zIndex: settings.zIndex + 30,
+            background: PANEL_COLORS.bg,
+            border: `1px solid ${PANEL_COLORS.border}`,
+            borderRadius: 8,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            padding: 0,
+            maxHeight: 460,
+            overflowY: "auto",
+          } as React.CSSProperties,
+          onClick: (e: React.MouseEvent) => e.stopPropagation(),
+        },
+        // ── Annotation section ──
+        React.createElement(
+          "div",
+          {
+            style: {
+              padding: 12,
+              borderBottom: commentsConfig ? `1px solid ${PANEL_COLORS.border}` : undefined,
+            } as React.CSSProperties,
+          },
+          // Type badge + title
+          React.createElement(
+            "div",
+            {
+              style: {
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 6,
+              } as React.CSSProperties,
+            },
+            React.createElement(
+              "span",
+              {
+                style: {
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: popoverTypeColor.text,
+                  background: popoverTypeColor.bg,
+                  border: `1px solid ${popoverTypeColor.border}`,
+                  borderRadius: 4,
+                  padding: "2px 6px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                } as React.CSSProperties,
+              },
+              React.createElement(PopoverTypeIcon, { size: 10, color: popoverTypeColor.text }),
+              annotationType
+            )
+          ),
+          // Title
+          React.createElement(
+            "div",
+            {
+              style: {
+                fontWeight: 600,
+                fontSize: 14,
+                color: PANEL_COLORS.textPrimary,
+                marginBottom: 4,
+              },
+            },
+            activeAnnotation.title
+          ),
+          // Body
+          React.createElement(
+            "div",
+            {
+              style: {
+                fontSize: 13,
+                color: PANEL_COLORS.textSecondary,
+                lineHeight: 1.5,
+                whiteSpace: "pre-wrap",
+              },
+            },
+            activeAnnotation.body
+          ),
+          // Author + date
+          React.createElement(
+            "div",
+            {
+              style: {
+                fontSize: 11,
+                color: PANEL_COLORS.textMuted,
+                marginTop: 8,
+              },
+            },
+            `${activeAnnotation.author} · ${activeAnnotation.date}`
+          )
+        ),
+        // ── Feedback section ──
+        commentsConfig && React.createElement(
+          "div",
+          {
+            style: { padding: 12 } as React.CSSProperties,
+          },
+          React.createElement(
+            "div",
+            {
+              style: {
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                marginBottom: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                color: PANEL_COLORS.textMuted,
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              } as React.CSSProperties,
+            },
+            React.createElement(MessageSquareTextIcon, { size: 12, color: PANEL_COLORS.textMuted }),
+            "Feedback",
+            comments.length > 0 && React.createElement(
+              "span",
+              {
+                style: {
+                  fontSize: 10,
+                  fontWeight: 600,
+                  background: "#F2F4F7",
+                  color: "#344054",
+                  borderRadius: 8,
+                  padding: "1px 6px",
+                } as React.CSSProperties,
+              },
+              comments.length
+            )
+          ),
+          React.createElement(CommentThread, { comments, isLoading, error }),
+          React.createElement(CommentForm, { onSubmit: submitComment })
+        )
+      )
+    );
   }
 
   return React.createElement(React.Fragment, null, ...elements);
