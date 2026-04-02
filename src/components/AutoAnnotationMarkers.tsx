@@ -79,7 +79,23 @@ export function AutoAnnotationMarkers() {
       });
     }
 
-    setBadges(newBadges);
+    // Bail out if badges haven't actually changed to avoid re-render loops
+    setBadges((prev) => {
+      if (prev.length !== newBadges.length) return newBadges;
+      const unchanged = prev.every((b, i) => {
+        const n = newBadges[i];
+        return (
+          b.annotation.id === n.annotation.id &&
+          b.openCommentCount === n.openCommentCount &&
+          b.allResolved === n.allResolved &&
+          Math.abs(b.rect.top - n.rect.top) < 1 &&
+          Math.abs(b.rect.left - n.rect.left) < 1 &&
+          Math.abs(b.rect.right - n.rect.right) < 1 &&
+          Math.abs(b.rect.bottom - n.rect.bottom) < 1
+        );
+      });
+      return unchanged ? prev : newBadges;
+    });
   }, [allAnnotations, registeredMarkerIds, showMarkers, currentRoute, allComments, commentsConfig]);
 
   // Update positions on mount, scroll, resize, and when dependencies change
@@ -90,13 +106,20 @@ export function AutoAnnotationMarkers() {
     window.addEventListener("scroll", updateBadges, true);
     window.addEventListener("resize", updateBadges);
 
-    // Also observe DOM mutations so we catch dynamically rendered elements
-    const observer = new MutationObserver(updateBadges);
+    // Debounce MutationObserver to avoid infinite loops:
+    // setBadges re-renders → DOM changes → observer fires → setBadges again
+    let rafId = 0;
+    const debouncedUpdate = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(updateBadges);
+    };
+    const observer = new MutationObserver(debouncedUpdate);
     observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
       window.removeEventListener("scroll", updateBadges, true);
       window.removeEventListener("resize", updateBadges);
+      cancelAnimationFrame(rafId);
       observer.disconnect();
     };
   }, [showMarkers, updateBadges]);
