@@ -17,7 +17,8 @@
   },
   "files": [
     "dist",
-    "bin"
+    "bin",
+    "CLAUDE.md"
   ],
   "scripts": {
     "build": "tsup",
