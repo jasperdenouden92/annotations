@@ -156,6 +156,28 @@ Als `apiBase` leeg is, wordt `window.location.origin` gebruikt.
 - **AnnotationButton counter**: `currentAnnotations.length + openFeedbackCount` (page-gefilterd)
 - **Feedback tab badge**: toont count van niet-opgeloste feedback op huidige pagina
 
+## Server helpers (voor consuming projects)
+
+Het package exporteert server-side helpers via `@jasperdenouden92/annotations/server` voor gebruik in API routes. **Gebruik deze altijd** bij het bouwen van een comments API — ze garanderen dat alle velden (inclusief `pagina`) correct worden opgeslagen.
+
+```typescript
+import { buildNotionCommentProperties, parseNotionComment } from "@jasperdenouden92/annotations/server";
+
+// POST handler — bouwt alle Notion properties inclusief Pagina
+const properties = buildNotionCommentProperties(
+  { annotationId, auteur, comment, pagina, label },
+  NOTION_PROJECT_ID
+);
+await fetch(`https://api.notion.com/v1/pages`, {
+  method: "POST",
+  headers: { Authorization: `Bearer ${NOTION_API_KEY}`, "Notion-Version": "2022-06-28", "Content-Type": "application/json" },
+  body: JSON.stringify({ parent: { database_id: NOTION_DATABASE_ID }, properties }),
+});
+
+// GET handler — parsed Notion page → Comment object
+const comments = data.results.map(parseNotionComment);
+```
+
 ## Build & publish
 
 ```bash
@@ -164,7 +186,7 @@ npm version patch # bump version
 npm publish       # publishes to GitHub Packages (npm.pkg.github.com)
 ```
 
-Output: `dist/index.js` (CJS), `dist/index.mjs` (ESM), `dist/index.d.ts` (types). Alle files krijgen `"use client";` banner voor Next.js compatibiliteit.
+Output: `dist/index.js` (CJS), `dist/index.mjs` (ESM), `dist/index.d.ts` (types). Client entry krijgt `"use client";` banner voor Next.js compatibiliteit. Server entry (`dist/server.*`) heeft geen banner.
 
 ## Code patterns
 

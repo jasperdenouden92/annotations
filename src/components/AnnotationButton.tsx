@@ -62,7 +62,7 @@ export function AnnotationButton() {
   if (!mounted) return null;
 
   const openFeedbackCount = allFeedback.filter(
-    (c) => c.status !== "Opgelost" && (c.pagina === currentRoute || !c.pagina)
+    (c) => c.status !== "Opgelost" && c.pagina === currentRoute
   ).length;
   const totalCount = currentAnnotations.length + openFeedbackCount;
 
