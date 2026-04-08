@@ -103,6 +103,57 @@ function ConversationDialog() {
 }
 ```
 
+### 5. Automatisch annotation ID's plaatsen
+
+Draai de scanner om UI-elementen te vinden en automatisch `data-annotation-id` attributen toe te voegen:
+
+```bash
+npx annotate-scan
+```
+
+Dit scant je `src/` map op navigatie, tabellen, formulieren, cards, modals, etc. en biedt aan om stabiele ID's toe te voegen. De feedback-inspector herkent deze ID's automatisch wanneer gebruikers comments plaatsen.
+
+### 6. Server helpers voor de comments API
+
+Het package exporteert server-side helpers voor je Notion comments API:
+
+```ts
+import {
+  buildNotionCommentProperties,
+  parseNotionComment,
+} from "@jasperdenouden92/annotations/server";
+```
+
+**POST handler** — bouwt alle Notion properties (inclusief Pagina):
+
+```ts
+const { annotationId, auteur, comment, pagina, label } = req.body;
+const properties = buildNotionCommentProperties(
+  { annotationId, auteur, comment, pagina, label },
+  NOTION_PROJECT_ID
+);
+
+await fetch(`https://api.notion.com/v1/pages`, {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${NOTION_API_KEY}`,
+    "Notion-Version": "2022-06-28",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    parent: { database_id: NOTION_DATABASE_ID },
+    properties,
+  }),
+});
+```
+
+**GET handler** — parsed Notion pages naar Comment objecten:
+
+```ts
+const data = await response.json();
+const comments = data.results.map(parseNotionComment);
+```
+
 ---
 
 ## Annotation types

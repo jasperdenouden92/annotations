@@ -48,7 +48,7 @@ export function FeedbackMarkers() {
     const grouped = new Map<string, Comment[]>();
     for (const c of allComments) {
       if (!c.annotationId || registeredMarkerIds.has(c.annotationId)) continue;
-      if (c.pagina && c.pagina !== currentRoute) continue;
+      if (!c.pagina || c.pagina !== currentRoute) continue;
       const list = grouped.get(c.annotationId) || [];
       list.push(c);
       grouped.set(c.annotationId, list);

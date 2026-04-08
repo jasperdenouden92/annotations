@@ -109,7 +109,7 @@ export function AnnotationPanel() {
     return true;
   });
 
-  const pageFeedback = allFeedback.filter((c) => c.pagina === currentRoute || !c.pagina);
+  const pageFeedback = allFeedback.filter((c) => c.pagina === currentRoute);
   const sourceFeedback = tab === "page" ? pageFeedback : allFeedback;
   const filteredFeedback = sourceFeedback.filter((c) => {
     if (statusFilter.size > 0 && !statusFilter.has(c.status)) return false;
