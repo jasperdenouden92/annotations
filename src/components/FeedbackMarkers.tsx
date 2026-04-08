@@ -129,7 +129,7 @@ export function FeedbackMarkers() {
         badge.openCount > 0
           ? React.createElement(
               "span",
-              { style: { fontSize: 10, fontWeight: 700, lineHeight: 1 } },
+              { style: { fontSize: 11, fontWeight: 700, lineHeight: 1 } },
               badge.openCount
             )
           : React.createElement(MessageSquareTextIcon, {

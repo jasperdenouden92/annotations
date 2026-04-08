@@ -39,7 +39,7 @@ export function CommentThread({ comments, isLoading, error }: CommentThreadProps
       "div",
       {
         style: {
-          fontSize: 13,
+          fontSize: 14,
           color: PANEL_COLORS.textMuted,
           padding: "8px 0",
         },
@@ -53,7 +53,7 @@ export function CommentThread({ comments, isLoading, error }: CommentThreadProps
       "div",
       {
         style: {
-          fontSize: 13,
+          fontSize: 14,
           color: "#B42318",
           padding: "8px 0",
         },
@@ -67,7 +67,7 @@ export function CommentThread({ comments, isLoading, error }: CommentThreadProps
       "div",
       {
         style: {
-          fontSize: 13,
+          fontSize: 14,
           color: PANEL_COLORS.textMuted,
           padding: "8px 0",
         },
@@ -91,11 +91,11 @@ export function CommentThread({ comments, isLoading, error }: CommentThreadProps
         {
           key: c.id,
           style: {
-            padding: "8px 10px",
-            borderRadius: 6,
+            padding: "12px 14px",
+            borderRadius: 8,
             border: `1px solid ${PANEL_COLORS.border}`,
             background: "#FFFFFF",
-            fontSize: 13,
+            fontSize: 14,
           } as React.CSSProperties,
         },
         // Header: auteur + status badge
@@ -115,7 +115,7 @@ export function CommentThread({ comments, isLoading, error }: CommentThreadProps
               style: {
                 fontWeight: 600,
                 color: PANEL_COLORS.textPrimary,
-                fontSize: 13,
+                fontSize: 14,
               },
             },
             c.auteur
@@ -124,10 +124,10 @@ export function CommentThread({ comments, isLoading, error }: CommentThreadProps
             "span",
             {
               style: {
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: 500,
-                padding: "1px 6px",
-                borderRadius: 10,
+                padding: "2px 8px",
+                borderRadius: 16,
                 background: STATUS_COLORS[c.status]?.bg ?? "#F5F5F5",
                 color: STATUS_COLORS[c.status]?.text ?? "#344054",
               } as React.CSSProperties,
@@ -166,8 +166,8 @@ export function CommentThread({ comments, isLoading, error }: CommentThreadProps
               {
                 style: {
                   marginTop: 6,
-                  padding: "6px 8px",
-                  borderRadius: 4,
+                  padding: "8px 12px",
+                  borderRadius: 8,
                   background: "#F9FAFB",
                   borderLeft: "3px solid #D0D5DD",
                   fontSize: 13,
@@ -181,7 +181,7 @@ export function CommentThread({ comments, isLoading, error }: CommentThreadProps
                 {
                   style: {
                     fontWeight: 600,
-                    fontSize: 11,
+                    fontSize: 12,
                     color: PANEL_COLORS.textMuted,
                     display: "block",
                     marginBottom: 2,

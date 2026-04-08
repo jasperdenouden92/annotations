@@ -93,7 +93,7 @@ export function AnnotationMarker({
   const badgeContent = matchingAnnotations.length > 1
     ? React.createElement(
         "span",
-        { style: { fontSize: 10, fontWeight: 700, lineHeight: 1 } },
+        { style: { fontSize: 11, fontWeight: 700, lineHeight: 1 } },
         matchingAnnotations.length
       )
     : React.createElement(TypeIcon, { size: 12, color: typeColor.text });
@@ -185,7 +185,7 @@ export function AnnotationMarker({
         openCommentCount > 0
           ? React.createElement(
               "span",
-              { style: { fontSize: 10, fontWeight: 700, lineHeight: 1 } },
+              { style: { fontSize: 11, fontWeight: 700, lineHeight: 1 } },
               openCommentCount
             )
           : React.createElement(MessageSquareTextIcon, {
@@ -207,8 +207,8 @@ export function AnnotationMarker({
               zIndex: settings.zIndex + 30,
               background: PANEL_COLORS.bg,
               border: `1px solid ${PANEL_COLORS.border}`,
-              borderRadius: 8,
-              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+              borderRadius: 12,
+              boxShadow: "0px 12px 16px -4px rgba(16,24,40,0.08), 0px 4px 6px -2px rgba(16,24,40,0.03)",
               padding: 0,
               maxHeight: 460,
               overflowY: "auto",
@@ -220,7 +220,7 @@ export function AnnotationMarker({
             "div",
             {
               style: {
-                padding: 12,
+                padding: 16,
                 borderBottom: commentsConfig ? `1px solid ${PANEL_COLORS.border}` : undefined,
               } as React.CSSProperties,
             },
@@ -242,12 +242,12 @@ export function AnnotationMarker({
                     display: "flex",
                     alignItems: "center",
                     gap: 4,
-                    fontSize: 10,
-                    fontWeight: 600,
+                    fontSize: 11,
+                    fontWeight: 500,
                     color: typeColor.text,
                     background: typeColor.bg,
                     border: `1px solid ${typeColor.border}`,
-                    borderRadius: 4,
+                    borderRadius: 6,
                     padding: "2px 6px",
                     textTransform: "uppercase",
                     letterSpacing: "0.5px",
@@ -275,7 +275,7 @@ export function AnnotationMarker({
               "div",
               {
                 style: {
-                  fontSize: 13,
+                  fontSize: 14,
                   color: PANEL_COLORS.textSecondary,
                   lineHeight: 1.5,
                   whiteSpace: "pre-wrap",
@@ -288,7 +288,7 @@ export function AnnotationMarker({
               "div",
               {
                 style: {
-                  fontSize: 11,
+                  fontSize: 12,
                   color: PANEL_COLORS.textMuted,
                   marginTop: 8,
                 },
@@ -300,7 +300,7 @@ export function AnnotationMarker({
           commentsConfig && React.createElement(
             "div",
             {
-              style: { padding: 12 } as React.CSSProperties,
+              style: { padding: 16 } as React.CSSProperties,
             },
             React.createElement(
               "div",
@@ -310,7 +310,7 @@ export function AnnotationMarker({
                   alignItems: "center",
                   gap: 6,
                   marginBottom: 8,
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: 600,
                   color: PANEL_COLORS.textMuted,
                   textTransform: "uppercase",
@@ -323,11 +323,11 @@ export function AnnotationMarker({
                 "span",
                 {
                   style: {
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: 600,
                     background: "#F2F4F7",
                     color: "#344054",
-                    borderRadius: 8,
+                    borderRadius: 16,
                     padding: "1px 6px",
                   } as React.CSSProperties,
                 },
