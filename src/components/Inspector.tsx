@@ -72,9 +72,9 @@ function InspectorPopover({
     zIndex: settings.zIndex + 50,
     background: PANEL_COLORS.bg,
     border: `1px solid ${PANEL_COLORS.border}`,
-    borderRadius: 8,
-    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-    padding: 12,
+    borderRadius: 12,
+    boxShadow: "0px 12px 16px -4px rgba(16,24,40,0.08), 0px 4px 6px -2px rgba(16,24,40,0.03)",
+    padding: 16,
     fontFamily:
       'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   };
@@ -102,7 +102,7 @@ function InspectorPopover({
         "div",
         {
           style: {
-            fontSize: 12,
+            fontSize: 13,
             color: PANEL_COLORS.textMuted,
             fontFamily: "monospace",
             overflow: "hidden",
@@ -336,7 +336,7 @@ export function Inspector() {
         zIndex: settings.zIndex + 10,
         width: 40,
         height: 40,
-        borderRadius: 10,
+        borderRadius: 8,
         background: active ? "#175CD3" : "#FFFFFF",
         color: active ? "#FFFFFF" : "#344054",
         border: `1px solid ${active ? "#175CD3" : "#D0D5DD"}`,
@@ -345,7 +345,7 @@ export function Inspector() {
         alignItems: "center",
         justifyContent: "center",
         boxShadow:
-          "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.1)",
+          "0px 1px 2px rgba(16,24,40,0.05)",
         transition: isDragging ? "none" : "all 0.15s ease",
         fontSize: 18,
       } as React.CSSProperties,

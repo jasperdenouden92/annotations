@@ -8,6 +8,7 @@ import { showHoverHighlight, removeHoverHighlight } from "../utils/find-element"
 import { MessageSquareTextIcon } from "../icons";
 import { PANEL_COLORS, TYPE_COLORS, TYPE_ICONS } from "../constants";
 import { getFixedPopoverStyle } from "../utils/popover-position";
+import { matchRoute } from "../utils/route-matching";
 import type { Annotation } from "../types";
 
 interface AutoBadgeInfo {
@@ -74,7 +75,7 @@ export function AutoAnnotationMarkers() {
       if (registeredMarkerIds.has(annotation.id)) continue;
 
       // Skip annotations not targeting the current route
-      if (annotation.target !== "global" && annotation.target !== currentRoute) continue;
+      if (annotation.target !== "global" && !matchRoute(annotation.target, currentRoute)) continue;
 
       // Try to find the element by annotation.elementId or annotation.id
       const lookupId = annotation.elementId || annotation.id;

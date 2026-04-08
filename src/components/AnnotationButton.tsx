@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useAnnotations } from "../context/useAnnotations";
 import { useAllComments } from "../hooks/useAllComments";
 import { getButtonPosition, snapToCorner } from "../utils/drag";
+import { matchRoute } from "../utils/route-matching";
 import { MessageSquareTextIcon } from "../icons";
 
 const DRAG_THRESHOLD = 5; // px before a mousedown becomes a drag
@@ -62,7 +63,7 @@ export function AnnotationButton() {
   if (!mounted) return null;
 
   const openFeedbackCount = allFeedback.filter(
-    (c) => c.status !== "Opgelost" && c.pagina === currentRoute
+    (c) => c.status !== "Opgelost" && matchRoute(currentRoute, c.pagina ?? "")
   ).length;
   const totalCount = currentAnnotations.length + openFeedbackCount;
 
@@ -89,7 +90,7 @@ export function AnnotationButton() {
         zIndex: settings.zIndex + 999,
         width: 40,
         height: 40,
-        borderRadius: 10,
+        borderRadius: 8,
         background: "#FFFFFF",
         color: "#344054",
         border: "1px solid #D0D5DD",
@@ -97,7 +98,7 @@ export function AnnotationButton() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.1)",
+        boxShadow: "0px 1px 2px rgba(16,24,40,0.05)",
         transition: isDragging ? "none" : "all 0.15s ease",
       } as React.CSSProperties,
     },
@@ -119,7 +120,7 @@ export function AnnotationButton() {
             background: "#B42318",
             border: "2px solid #FFFFFF",
             color: "#FFFFFF",
-            fontSize: 10,
+            fontSize: 11,
             fontWeight: 600,
             display: "flex",
             alignItems: "center",

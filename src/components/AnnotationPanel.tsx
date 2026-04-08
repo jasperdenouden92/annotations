@@ -5,6 +5,7 @@ import { getCornerPosition, snapToCorner } from "../utils/drag";
 import { findElementByAnnotationId, scrollToAndHighlight, showHoverHighlight, removeHoverHighlight } from "../utils/find-element";
 import { XIcon, SearchIcon, GripVerticalIcon } from "../icons";
 import { PANEL_COLORS, TYPE_COLORS, TYPE_ICONS } from "../constants";
+import { matchRoute } from "../utils/route-matching";
 import { AnnotationCard } from "./AnnotationCard";
 import type { Comment, AnnotationType } from "../types";
 
@@ -109,7 +110,7 @@ export function AnnotationPanel() {
     return true;
   });
 
-  const pageFeedback = allFeedback.filter((c) => c.pagina === currentRoute);
+  const pageFeedback = allFeedback.filter((c) => matchRoute(currentRoute, c.pagina ?? ""));
   const sourceFeedback = tab === "page" ? pageFeedback : allFeedback;
   const filteredFeedback = sourceFeedback.filter((c) => {
     if (statusFilter.size > 0 && !statusFilter.has(c.status)) return false;
@@ -141,7 +142,7 @@ export function AnnotationPanel() {
         flexDirection: "column",
         overflow: "hidden",
         border: `1px solid ${PANEL_COLORS.border}`,
-        boxShadow: "0 8px 24px rgba(16,24,40,0.08), 0 20px 48px rgba(16,24,40,0.12)",
+        boxShadow: "0px 20px 25px -5px rgba(16,24,40,0.1), 0px 8px 10px -6px rgba(16,24,40,0.1)",
         transition: isDragging ? "none" : "all 0.2s ease-out",
         cursor: isDragging ? "grabbing" : "default",
         fontFamily:
@@ -156,7 +157,7 @@ export function AnnotationPanel() {
         style: {
           display: "flex",
           alignItems: "center",
-          padding: "12px 14px",
+          padding: "14px 16px",
           borderBottom: `1px solid ${PANEL_COLORS.border}`,
           gap: 8,
         } as React.CSSProperties,
@@ -236,9 +237,9 @@ export function AnnotationPanel() {
               background: "transparent",
               border: "none",
               borderBottom: view === v ? `2px solid ${accentColor}` : "2px solid transparent",
-              padding: "6px 14px 8px",
+              padding: "8px 14px 10px",
               cursor: "pointer",
-              fontSize: 13,
+              fontSize: 14,
               fontFamily: "inherit",
               fontWeight: view === v ? 600 : 400,
               color: view === v ? PANEL_COLORS.textPrimary : PANEL_COLORS.textMuted,
@@ -252,12 +253,12 @@ export function AnnotationPanel() {
                 {
                   style: {
                     marginLeft: 6,
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: 600,
                     background: "#F2F4F7",
                     color: "#344054",
                     border: "1px solid #EAECF0",
-                    borderRadius: 8,
+                    borderRadius: 16,
                     padding: "1px 6px",
                   } as React.CSSProperties,
                 },
@@ -274,8 +275,8 @@ export function AnnotationPanel() {
       {
         style: {
           display: "flex",
-          padding: "8px 14px 0",
-          gap: 4,
+          padding: "10px 16px 0",
+          gap: 6,
         } as React.CSSProperties,
       },
       ...[
@@ -298,10 +299,10 @@ export function AnnotationPanel() {
             style: {
               background: tab === t.key ? PANEL_COLORS.bgHover : "transparent",
               border: "none",
-              borderRadius: 6,
-              padding: "6px 12px",
+              borderRadius: 8,
+              padding: "6px 14px",
               cursor: "pointer",
-              fontSize: 12,
+              fontSize: 14,
               fontFamily: "inherit",
               fontWeight: 500,
               color: tab === t.key ? PANEL_COLORS.textPrimary : PANEL_COLORS.textSecondary,
@@ -319,9 +320,9 @@ export function AnnotationPanel() {
                 background: tab === t.key ? "#F2F4F7" : "transparent",
                 color: tab === t.key ? "#344054" : "#98A2B3",
                 border: `1px solid ${tab === t.key ? "#EAECF0" : "transparent"}`,
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 600,
-                borderRadius: 8,
+                borderRadius: 16,
                 padding: "1px 6px",
                 minWidth: 18,
                 textAlign: "center",
@@ -338,7 +339,7 @@ export function AnnotationPanel() {
       "div",
       {
         style: {
-          padding: "8px 14px",
+          padding: "10px 16px",
           position: "relative",
         } as React.CSSProperties,
       },
@@ -366,9 +367,9 @@ export function AnnotationPanel() {
           width: "100%",
           background: PANEL_COLORS.bgHover,
           border: `1px solid ${PANEL_COLORS.border}`,
-          borderRadius: 6,
-          padding: "7px 10px 7px 32px",
-          fontSize: 12,
+          borderRadius: 8,
+          padding: "8px 12px 8px 34px",
+          fontSize: 14,
           fontFamily: "inherit",
           color: PANEL_COLORS.textPrimary,
           outline: "none",
@@ -384,8 +385,8 @@ export function AnnotationPanel() {
         style: {
           display: "flex",
           flexWrap: "wrap",
-          gap: 4,
-          padding: "0 14px 6px",
+          gap: 6,
+          padding: "0 16px 8px",
         } as React.CSSProperties,
       },
       ...(view === "annotations"
@@ -407,12 +408,12 @@ export function AnnotationPanel() {
                 style: {
                   display: "flex",
                   alignItems: "center",
-                  gap: 3,
-                  fontSize: 10,
+                  gap: 4,
+                  fontSize: 12,
                   fontWeight: 500,
                   fontFamily: "inherit",
-                  padding: "2px 8px",
-                  borderRadius: 10,
+                  padding: "4px 10px",
+                  borderRadius: 16,
                   border: `1px solid ${active ? tc.border : PANEL_COLORS.border}`,
                   background: active ? tc.bg : "transparent",
                   color: active ? tc.text : PANEL_COLORS.textMuted,
@@ -439,11 +440,11 @@ export function AnnotationPanel() {
                   });
                 },
                 style: {
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: 500,
                   fontFamily: "inherit",
-                  padding: "2px 10px",
-                  borderRadius: 10,
+                  padding: "4px 12px",
+                  borderRadius: 16,
                   border: `1px solid ${active ? sc.text + "44" : PANEL_COLORS.border}`,
                   background: active ? sc.bg : "transparent",
                   color: active ? sc.text : PANEL_COLORS.textMuted,
@@ -466,10 +467,10 @@ export function AnnotationPanel() {
             style: {
               flex: 1,
               overflowY: "auto",
-              padding: "4px 8px 8px",
+              padding: "6px 10px 10px",
               display: "flex",
               flexDirection: "column",
-              gap: 2,
+              gap: 4,
             } as React.CSSProperties,
           },
           filtered.length === 0
@@ -514,10 +515,10 @@ export function AnnotationPanel() {
             style: {
               flex: 1,
               overflowY: "auto",
-              padding: "4px 8px 8px",
+              padding: "6px 10px 10px",
               display: "flex",
               flexDirection: "column",
-              gap: 6,
+              gap: 8,
             } as React.CSSProperties,
           },
           feedbackLoading && filteredFeedback.length === 0
@@ -572,11 +573,11 @@ export function AnnotationPanel() {
                           }
                         },
                         style: {
-                          padding: "10px 12px",
-                          borderRadius: 6,
+                          padding: "12px 14px",
+                          borderRadius: 8,
                           border: `1px solid ${PANEL_COLORS.border}`,
                           background: "#FFFFFF",
-                          fontSize: 13,
+                          fontSize: 14,
                           cursor: c.annotationId ? "pointer" : "default",
                           transition: "border-color 0.15s ease",
                         } as React.CSSProperties,
@@ -597,7 +598,7 @@ export function AnnotationPanel() {
                         "div",
                         {
                           style: {
-                            fontSize: 11,
+                            fontSize: 12,
                             color: PANEL_COLORS.textMuted,
                             marginBottom: 4,
                             fontFamily: "monospace",
@@ -622,7 +623,7 @@ export function AnnotationPanel() {
                             style: {
                               fontWeight: 600,
                               color: PANEL_COLORS.textPrimary,
-                              fontSize: 13,
+                              fontSize: 14,
                             },
                           },
                           c.auteur
@@ -631,10 +632,10 @@ export function AnnotationPanel() {
                           "span",
                           {
                             style: {
-                              fontSize: 11,
+                              fontSize: 12,
                               fontWeight: 500,
-                              padding: "1px 6px",
-                              borderRadius: 10,
+                              padding: "2px 8px",
+                              borderRadius: 16,
                               background:
                                 c.status === "Open" ? "#FEF3F2"
                                 : c.status === "In behandeling" ? "#FFF6ED"
@@ -667,11 +668,11 @@ export function AnnotationPanel() {
                             {
                               style: {
                                 marginTop: 6,
-                                padding: "6px 8px",
-                                borderRadius: 4,
+                                padding: "8px 12px",
+                                borderRadius: 8,
                                 background: "#F9FAFB",
                                 borderLeft: "3px solid #D0D5DD",
-                                fontSize: 13,
+                                fontSize: 14,
                                 color: PANEL_COLORS.textSecondary,
                                 lineHeight: 1.4,
                                 whiteSpace: "pre-wrap",
@@ -682,7 +683,7 @@ export function AnnotationPanel() {
                               {
                                 style: {
                                   fontWeight: 600,
-                                  fontSize: 11,
+                                  fontSize: 12,
                                   color: PANEL_COLORS.textMuted,
                                   display: "block",
                                   marginBottom: 2,
@@ -701,9 +702,9 @@ export function AnnotationPanel() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "space-between",
-                            fontSize: 11,
+                            fontSize: 12,
                             color: PANEL_COLORS.textMuted,
-                            marginTop: 4,
+                            marginTop: 6,
                           } as React.CSSProperties,
                         },
                         // Page path (left)
@@ -712,7 +713,11 @@ export function AnnotationPanel() {
                           {
                             onClick: c.pagina ? (e: React.MouseEvent) => {
                               e.stopPropagation();
-                              window.history.pushState(null, "", c.pagina!);
+                              const raw = c.pagina!;
+                              const url = raw.startsWith("?") ? "/" + raw
+                                : raw.startsWith("/") ? raw
+                                : "/" + raw;
+                              window.history.pushState(null, "", url);
                               window.dispatchEvent(new PopStateEvent("popstate"));
                             } : undefined,
                             style: {
@@ -725,7 +730,16 @@ export function AnnotationPanel() {
                             } as React.CSSProperties,
                           },
                           c.pagina
-                            ? c.pagina.replace(/^\//, "").split("/").filter(Boolean).join(" / ") || "global"
+                            ? (() => {
+                                const [p, q] = c.pagina!.split("?");
+                                const pathLabel = p.replace(/^\//, "").split("/").filter(Boolean).join(" / ");
+                                if (q) {
+                                  const params = new URLSearchParams(q);
+                                  const parts = Array.from(params.entries()).map(([k, v]) => `${k}=${v}`);
+                                  return pathLabel ? `${pathLabel} · ${parts.join(" · ")}` : parts.join(" · ");
+                                }
+                                return pathLabel || "global";
+                              })()
                             : ""
                         ),
                         // Date (right)

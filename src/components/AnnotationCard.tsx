@@ -27,11 +27,17 @@ export function AnnotationCard({
   const TypeIcon = TYPE_ICONS[type];
   const hasElement = !!annotation.elementId;
 
-  // Build breadcrumb from target
-  const breadcrumb = annotation.target
-    .replace(/^\//, "")
-    .split("/")
-    .filter(Boolean);
+  // Build breadcrumb from target (supports both path and query-param routing)
+  const breadcrumb = (() => {
+    const [p, q] = annotation.target.split("?");
+    const pathParts = p.replace(/^\//, "").split("/").filter(Boolean);
+    if (q) {
+      const params = new URLSearchParams(q);
+      const qParts = Array.from(params.entries()).map(([k, v]) => `${k}=${v}`);
+      return pathParts.length > 0 ? [...pathParts, ...qParts] : qParts;
+    }
+    return pathParts;
+  })();
 
   return React.createElement(
     "button",
@@ -50,8 +56,8 @@ export function AnnotationCard({
             : "transparent",
         border: "none",
         borderLeft: isActive ? `3px solid ${accentColor}` : "3px solid transparent",
-        borderRadius: 6,
-        padding: "10px 12px",
+        borderRadius: 8,
+        padding: "12px 14px",
         cursor: hasElement ? "pointer" : "default",
         transition: "background 0.1s ease",
         fontFamily: "inherit",
@@ -73,7 +79,7 @@ export function AnnotationCard({
         "span",
         {
           style: {
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 600,
             color: PANEL_COLORS.textPrimary,
             overflow: "hidden",
@@ -101,12 +107,12 @@ export function AnnotationCard({
             display: "flex",
             alignItems: "center",
             gap: 3,
-            fontSize: 10,
-            fontWeight: 600,
+            fontSize: 11,
+            fontWeight: 500,
             color: typeColor.text,
             background: typeColor.bg,
             border: `1px solid ${typeColor.border}`,
-            borderRadius: 4,
+            borderRadius: 6,
             padding: "1px 6px",
             textTransform: "uppercase",
             letterSpacing: "0.5px",
@@ -122,7 +128,7 @@ export function AnnotationCard({
       "p",
       {
         style: {
-          fontSize: 12,
+          fontSize: 13,
           color: PANEL_COLORS.textSecondary,
           margin: "0 0 6px 0",
           lineHeight: 1.5,
@@ -142,7 +148,7 @@ export function AnnotationCard({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          fontSize: 11,
+          fontSize: 12,
           color: PANEL_COLORS.textMuted,
         } as React.CSSProperties,
       },
@@ -153,7 +159,11 @@ export function AnnotationCard({
           onClick: (e: React.MouseEvent) => {
             e.stopPropagation();
             if (annotation.target && annotation.target !== "global") {
-              window.history.pushState(null, "", annotation.target);
+              const raw = annotation.target;
+              const url = raw.startsWith("?") ? "/" + raw
+                : raw.startsWith("/") ? raw
+                : "/" + raw;
+              window.history.pushState(null, "", url);
               window.dispatchEvent(new PopStateEvent("popstate"));
             }
           },
