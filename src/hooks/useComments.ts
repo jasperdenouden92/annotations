@@ -84,7 +84,7 @@ export function useComments({
           annotationId,
           auteur: data.auteur,
           comment: data.comment,
-          pagina: typeof window !== "undefined" ? window.location.pathname : "/",
+          pagina: typeof window !== "undefined" ? window.location.pathname + window.location.search : "/",
           label,
         }),
       });

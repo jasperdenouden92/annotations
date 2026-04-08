@@ -27,11 +27,17 @@ export function AnnotationCard({
   const TypeIcon = TYPE_ICONS[type];
   const hasElement = !!annotation.elementId;
 
-  // Build breadcrumb from target
-  const breadcrumb = annotation.target
-    .replace(/^\//, "")
-    .split("/")
-    .filter(Boolean);
+  // Build breadcrumb from target (supports both path and query-param routing)
+  const breadcrumb = (() => {
+    const [p, q] = annotation.target.split("?");
+    const pathParts = p.replace(/^\//, "").split("/").filter(Boolean);
+    if (q) {
+      const params = new URLSearchParams(q);
+      const qParts = Array.from(params.entries()).map(([k, v]) => `${k}=${v}`);
+      return pathParts.length > 0 ? [...pathParts, ...qParts] : qParts;
+    }
+    return pathParts;
+  })();
 
   return React.createElement(
     "button",
@@ -153,7 +159,11 @@ export function AnnotationCard({
           onClick: (e: React.MouseEvent) => {
             e.stopPropagation();
             if (annotation.target && annotation.target !== "global") {
-              window.history.pushState(null, "", annotation.target);
+              const raw = annotation.target;
+              const url = raw.startsWith("?") ? "/" + raw
+                : raw.startsWith("/") ? raw
+                : "/" + raw;
+              window.history.pushState(null, "", url);
               window.dispatchEvent(new PopStateEvent("popstate"));
             }
           },

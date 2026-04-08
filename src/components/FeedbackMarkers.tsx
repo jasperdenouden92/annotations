@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAnnotationsSafe } from "../context/useAnnotationsSafe";
 import { findElementByAnnotationId } from "../utils/find-element";
+import { matchRoute } from "../utils/route-matching";
 import { MessageSquareTextIcon } from "../icons";
 import type { Comment } from "../types";
 
@@ -48,7 +49,7 @@ export function FeedbackMarkers() {
     const grouped = new Map<string, Comment[]>();
     for (const c of allComments) {
       if (!c.annotationId || registeredMarkerIds.has(c.annotationId)) continue;
-      if (!c.pagina || c.pagina !== currentRoute) continue;
+      if (!c.pagina || !matchRoute(currentRoute, c.pagina)) continue;
       const list = grouped.get(c.annotationId) || [];
       list.push(c);
       grouped.set(c.annotationId, list);

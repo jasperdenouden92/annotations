@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useAnnotations } from "../context/useAnnotations";
 import { useAllComments } from "../hooks/useAllComments";
 import { getButtonPosition, snapToCorner } from "../utils/drag";
+import { matchRoute } from "../utils/route-matching";
 import { MessageSquareTextIcon } from "../icons";
 
 const DRAG_THRESHOLD = 5; // px before a mousedown becomes a drag
@@ -62,7 +63,7 @@ export function AnnotationButton() {
   if (!mounted) return null;
 
   const openFeedbackCount = allFeedback.filter(
-    (c) => c.status !== "Opgelost" && c.pagina === currentRoute
+    (c) => c.status !== "Opgelost" && matchRoute(currentRoute, c.pagina ?? "")
   ).length;
   const totalCount = currentAnnotations.length + openFeedbackCount;
 

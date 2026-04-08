@@ -5,6 +5,7 @@ import { getCornerPosition, snapToCorner } from "../utils/drag";
 import { findElementByAnnotationId, scrollToAndHighlight, showHoverHighlight, removeHoverHighlight } from "../utils/find-element";
 import { XIcon, SearchIcon, GripVerticalIcon } from "../icons";
 import { PANEL_COLORS, TYPE_COLORS, TYPE_ICONS } from "../constants";
+import { matchRoute } from "../utils/route-matching";
 import { AnnotationCard } from "./AnnotationCard";
 import type { Comment, AnnotationType } from "../types";
 
@@ -109,7 +110,7 @@ export function AnnotationPanel() {
     return true;
   });
 
-  const pageFeedback = allFeedback.filter((c) => c.pagina === currentRoute);
+  const pageFeedback = allFeedback.filter((c) => matchRoute(currentRoute, c.pagina ?? ""));
   const sourceFeedback = tab === "page" ? pageFeedback : allFeedback;
   const filteredFeedback = sourceFeedback.filter((c) => {
     if (statusFilter.size > 0 && !statusFilter.has(c.status)) return false;
@@ -712,8 +713,11 @@ export function AnnotationPanel() {
                           {
                             onClick: c.pagina ? (e: React.MouseEvent) => {
                               e.stopPropagation();
-                              const path = c.pagina!.startsWith("/") ? c.pagina! : "/" + c.pagina!;
-                              window.history.pushState(null, "", path);
+                              const raw = c.pagina!;
+                              const url = raw.startsWith("?") ? "/" + raw
+                                : raw.startsWith("/") ? raw
+                                : "/" + raw;
+                              window.history.pushState(null, "", url);
                               window.dispatchEvent(new PopStateEvent("popstate"));
                             } : undefined,
                             style: {
@@ -726,7 +730,16 @@ export function AnnotationPanel() {
                             } as React.CSSProperties,
                           },
                           c.pagina
-                            ? c.pagina.replace(/^\//, "").split("/").filter(Boolean).join(" / ") || "global"
+                            ? (() => {
+                                const [p, q] = c.pagina!.split("?");
+                                const pathLabel = p.replace(/^\//, "").split("/").filter(Boolean).join(" / ");
+                                if (q) {
+                                  const params = new URLSearchParams(q);
+                                  const parts = Array.from(params.entries()).map(([k, v]) => `${k}=${v}`);
+                                  return pathLabel ? `${pathLabel} · ${parts.join(" · ")}` : parts.join(" · ");
+                                }
+                                return pathLabel || "global";
+                              })()
                             : ""
                         ),
                         // Date (right)
