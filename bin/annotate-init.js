@@ -197,6 +197,82 @@ function ensureVercelConfig(rootDir) {
   return true;
 }
 
+// ── Vite plugin injection ────────────────────────────────────────────────────
+
+const VITE_CONFIG_CANDIDATES = [
+  "vite.config.ts",
+  "vite.config.js",
+  "vite.config.mts",
+  "vite.config.mjs",
+];
+
+function findViteConfig(rootDir) {
+  for (const candidate of VITE_CONFIG_CANDIDATES) {
+    const fullPath = path.join(rootDir, candidate);
+    if (fs.existsSync(fullPath)) return fullPath;
+  }
+  return null;
+}
+
+function ensureVitePlugin(rootDir) {
+  const viteConfigPath = findViteConfig(rootDir);
+  if (!viteConfigPath) {
+    console.log(`  ${c("dim", "─")} ${c("dim", "Geen Vite project — overgeslagen")}`);
+    return false;
+  }
+
+  const configRelPath = path.relative(rootDir, viteConfigPath);
+  let content = fs.readFileSync(viteConfigPath, "utf-8");
+
+  if (content.includes("annotationsDevApi")) {
+    console.log(`  ${c("green", "✓")} ${c("dim", `${configRelPath} heeft al annotationsDevApi`)}`);
+    return false;
+  }
+
+  // Add import after last import statement
+  const lines = content.split("\n");
+  let lastImportIndex = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\s*import\s/.test(lines[i])) {
+      let j = i;
+      while (j < lines.length && !lines[j].includes(";") && !lines[j].match(/['"]$/)) {
+        j++;
+      }
+      lastImportIndex = j;
+    }
+  }
+
+  const pluginImport = `import { annotationsDevApi } from '@jasperdenouden92/annotations/vite'`;
+
+  if (lastImportIndex === -1) {
+    lines.unshift(pluginImport);
+  } else {
+    lines.splice(lastImportIndex + 1, 0, pluginImport);
+  }
+  content = lines.join("\n");
+
+  // Add annotationsDevApi() to the plugins array
+  const pluginsMatch = content.match(/plugins\s*:\s*\[/);
+  if (pluginsMatch) {
+    const insertAt = content.indexOf(pluginsMatch[0]) + pluginsMatch[0].length;
+    // Check what follows to determine formatting
+    const after = content.slice(insertAt).trimStart();
+    const needsComma = after.length > 0 && after[0] !== "]";
+    const insertion = needsComma ? `annotationsDevApi(), ` : `annotationsDevApi()`;
+    content = content.slice(0, insertAt) + insertion + content.slice(insertAt);
+  } else {
+    console.log(`  ${c("yellow", "!")} ${c("dim", `Kon plugins array niet vinden in ${configRelPath} — voeg handmatig annotationsDevApi() toe`)}`)
+    // Still write the import
+    fs.writeFileSync(viteConfigPath, content, "utf-8");
+    console.log(`  ${c("green", "✓")} ${c("bold", configRelPath)} import toegevoegd`);
+    return true;
+  }
+
+  fs.writeFileSync(viteConfigPath, content, "utf-8");
+  console.log(`  ${c("green", "✓")} ${c("bold", configRelPath)} annotationsDevApi() toegevoegd`);
+  return true;
+}
+
 // ── Layout file detection ───────────────────────────────────────────────────
 
 function findLayoutFile(rootDir) {
@@ -425,7 +501,12 @@ function main() {
   ensureVercelConfig(rootDir);
   console.log("");
 
-  // Step 4: Find and modify layout file
+  // Step 4: Vite plugin (only if Vite project)
+  console.log(c("dim", "  ─ Vite plugin ───────────────────────────"));
+  ensureVitePlugin(rootDir);
+  console.log("");
+
+  // Step 5: Find and modify layout file
   console.log(c("dim", "  ─ Layout file ───────────────────────────"));
   const layoutFile = findLayoutFile(rootDir);
 
