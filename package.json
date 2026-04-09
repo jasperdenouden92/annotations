@@ -1,6 +1,6 @@
 {
   "name": "@jasperdenouden92/annotations",
-  "version": "2.5.8",
+  "version": "2.7.0",
   "description": "Client-facing annotation engine voor alle projecten",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -18,7 +18,8 @@
     }
   },
   "bin": {
-    "annotate-scan": "./bin/annotate-scan.js"
+    "annotate-scan": "./bin/annotate-scan.js",
+    "annotate-init": "./bin/annotate-init.js"
   },
   "files": [
     "dist",

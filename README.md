@@ -15,7 +15,26 @@ Zorg dat je `.npmrc` verwijst naar GitHub Packages:
 
 ---
 
-## Gebruik
+## Quick start
+
+De snelste manier om te starten is met de CLI:
+
+```bash
+npx annotate-init
+```
+
+Dit automatiseert de volledige setup:
+
+1. Maakt `src/annotations/data.js` aan met een lege annotations array
+2. Zoekt je root layout-bestand (het bestand dat `useLocation()` gebruikt, bijv. `App.tsx`)
+3. Voegt de benodigde imports toe
+4. Wrapt je layout met `<AnnotationProvider>` en plaatst `<AnnotationButton />` en `<AnnotationPanel />`
+
+Het commando is idempotent — als alles al is geconfigureerd wordt er niks aangepast.
+
+---
+
+## Handmatige setup
 
 ### 1. Provider + Button + Panel in je root layout
 
@@ -112,6 +131,8 @@ npx annotate-scan
 ```
 
 Dit scant je `src/` map op navigatie, tabellen, formulieren, cards, modals, etc. en biedt aan om stabiele ID's toe te voegen. De feedback-inspector herkent deze ID's automatisch wanneer gebruikers comments plaatsen.
+
+> **Tip:** Na `annotate-init` is `annotate-scan` de logische volgende stap om je UI-elementen te labelen.
 
 ### 6. Server helpers voor de comments API
 
