@@ -100,6 +100,7 @@ src/
 ├── types.ts                          — Alle TypeScript types
 ├── constants.ts                      — Defaults, kleuren, labels
 ├── icons.ts                          — Inline SVG icon components
+├── vite.ts                           — Vite plugin: annotationsDevApi() voor local dev API
 ├── context/
 │   ├── AnnotationContext.tsx          — Provider: state management, keyboard shortcuts, route tracking
 │   ├── useAnnotations.ts             — Hook (throws als buiten provider)
@@ -178,6 +179,20 @@ await fetch(`https://api.notion.com/v1/pages`, {
 const comments = data.results.map(parseNotionComment);
 ```
 
+## Vite plugin (voor local dev)
+
+Vite serveert geen Vercel serverless functions, dus `/api/comments` geeft een 404 tijdens local dev. Het package biedt een Vite plugin die de API middleware inline afhandelt:
+
+```typescript
+import { annotationsDevApi } from "@jasperdenouden92/annotations/vite";
+
+export default defineConfig({
+  plugins: [annotationsDevApi(), react()],
+});
+```
+
+De plugin laadt `.env` uit de project root en waarschuwt als `NOTION_API_KEY`, `NOTION_DATABASE_ID` of `NOTION_PROJECT_ID` ontbreekt.
+
 ## Build & publish
 
 ```bash
@@ -186,7 +201,7 @@ npm version patch # bump version
 npm publish       # publishes to GitHub Packages (npm.pkg.github.com)
 ```
 
-Output: `dist/index.js` (CJS), `dist/index.mjs` (ESM), `dist/index.d.ts` (types). Client entry krijgt `"use client";` banner voor Next.js compatibiliteit. Server entry (`dist/server.*`) heeft geen banner.
+Output: `dist/index.js` (CJS), `dist/index.mjs` (ESM), `dist/index.d.ts` (types). Client entry krijgt `"use client";` banner voor Next.js compatibiliteit. Server entry (`dist/server.*`) en Vite entry (`dist/vite.*`) hebben geen banner.
 
 ## Code patterns
 

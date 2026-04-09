@@ -1,6 +1,6 @@
 {
   "name": "@jasperdenouden92/annotations",
-  "version": "2.7.3",
+  "version": "2.7.4",
   "description": "Client-facing annotation engine voor alle projecten",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -15,6 +15,11 @@
       "types": "./dist/server.d.ts",
       "import": "./dist/server.mjs",
       "require": "./dist/server.js"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "import": "./dist/vite.mjs",
+      "require": "./dist/vite.js"
     }
   },
   "bin": {
@@ -36,6 +41,7 @@
     "react-dom": ">=17"
   },
   "devDependencies": {
+    "@types/node": "^25.5.2",
     "@types/react": "^18",
     "tsup": "^8",
     "typescript": "~5.6"

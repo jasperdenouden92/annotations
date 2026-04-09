@@ -14,4 +14,9 @@ export default defineConfig([
     format: ["esm", "cjs"],
     dts: true,
   },
+  {
+    entry: ["src/vite.ts"],
+    format: ["esm", "cjs"],
+    dts: true,
+  },
 ]);
