@@ -220,16 +220,34 @@ function wrapWithProvider(content) {
 }
 
 function findReturnStatement(content) {
-  // Find "return" that's followed by "(" — the main component return
-  // We want the return that's inside the component with useLocation
+  // Find "return (" that contains JSX, skipping hook cleanups like "return () =>"
   const locationIndex = content.indexOf("useLocation()");
   if (locationIndex === -1) return -1;
 
   // Search for return statements after useLocation
   const regex = /\breturn\s*\(/g;
   regex.lastIndex = locationIndex;
-  const match = regex.exec(content);
-  return match ? match.index : -1;
+
+  let lastJsxReturn = -1;
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    const afterParen = content.slice(match.index + match[0].length).trimStart();
+    // Skip cleanup returns: "return () =>" or "return (function"
+    if (afterParen.startsWith(")") && /^\)\s*=>/.test(afterParen)) continue;
+    if (afterParen.startsWith("function")) continue;
+
+    // Check if this return contains JSX (has a < tag)
+    const parenStart = content.indexOf("(", match.index);
+    const parenEnd = findMatchingParen(content, parenStart);
+    if (parenEnd === -1) continue;
+
+    const inner = content.slice(parenStart + 1, parenEnd);
+    if (/<\w/.test(inner)) {
+      lastJsxReturn = match.index;
+    }
+  }
+
+  return lastJsxReturn;
 }
 
 function findMatchingParen(content, openIndex) {
