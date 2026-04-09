@@ -1,6 +1,6 @@
 {
   "name": "@jasperdenouden92/annotations",
-  "version": "2.7.1",
+  "version": "2.7.2",
   "description": "Client-facing annotation engine voor alle projecten",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
