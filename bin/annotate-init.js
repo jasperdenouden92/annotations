@@ -15,10 +15,64 @@ const COLORS = {
   red: "\x1b[31m",
 };
 
-const ANNOTATION_IMPORT = `import { AnnotationProvider, AnnotationButton, AnnotationPanel } from '@jasperdenouden92/annotations'`;
+const ANNOTATION_IMPORT = `import { AnnotationProvider, AnnotationButton, AnnotationPanel, Inspector } from '@jasperdenouden92/annotations'`;
 const DATA_IMPORT = `import { annotations } from './annotations/data'`;
 
 const DATA_FILE_CONTENT = `export const annotations = []\n`;
+
+const API_COMMENTS_CONTENT = `import { buildNotionCommentProperties, parseNotionComment } from '@jasperdenouden92/annotations/server'
+
+const { NOTION_API_KEY, NOTION_DATABASE_ID, NOTION_PROJECT_ID } = process.env
+
+const NOTION_BASE = 'https://api.notion.com/v1'
+const headers = {
+  Authorization: \`Bearer \${NOTION_API_KEY}\`,
+  'Notion-Version': '2022-06-28',
+  'Content-Type': 'application/json',
+}
+
+export default async function handler(req, res) {
+  if (req.method === 'GET') {
+    const { project, annotationId } = req.query
+
+    const filter = {
+      and: [
+        { property: 'Project', relation: { contains: NOTION_PROJECT_ID } },
+      ],
+    }
+    if (annotationId) {
+      filter.and.push({ property: 'AnnotationId', rich_text: { equals: annotationId } })
+    }
+
+    const response = await fetch(\`\${NOTION_BASE}/databases/\${NOTION_DATABASE_ID}/query\`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ filter }),
+    })
+    const data = await response.json()
+    const comments = data.results.map(parseNotionComment)
+    return res.json(comments)
+  }
+
+  if (req.method === 'POST') {
+    const { annotationId, auteur, comment, pagina, label } = req.body
+    const properties = buildNotionCommentProperties(
+      { annotationId, auteur, comment, pagina, label },
+      NOTION_PROJECT_ID
+    )
+    const response = await fetch(\`\${NOTION_BASE}/pages\`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ parent: { database_id: NOTION_DATABASE_ID }, properties }),
+    })
+    const page = await response.json()
+    return res.status(201).json(parseNotionComment(page))
+  }
+
+  res.setHeader('Allow', 'GET, POST')
+  return res.status(405).json({ error: 'Method not allowed' })
+}
+`;
 
 // Entry points to search for, in priority order
 const ENTRY_CANDIDATES = [
@@ -74,6 +128,72 @@ function ensureDataFile(rootDir) {
 
   fs.writeFileSync(dataFile, DATA_FILE_CONTENT, "utf-8");
   console.log(`  ${c("green", "✓")} ${c("bold", "src/annotations/data.js")} aangemaakt`);
+  return true;
+}
+
+// ── API route creation ───────────────────────────────────────────────────────
+
+function ensureApiRoute(rootDir) {
+  const apiDir = path.join(rootDir, "api");
+  const apiFile = path.join(apiDir, "comments.js");
+
+  if (fs.existsSync(apiFile)) {
+    console.log(`  ${c("green", "✓")} ${c("dim", "api/comments.js bestaat al")}`);
+    return false;
+  }
+
+  if (!fs.existsSync(apiDir)) {
+    fs.mkdirSync(apiDir, { recursive: true });
+  }
+
+  fs.writeFileSync(apiFile, API_COMMENTS_CONTENT, "utf-8");
+  console.log(`  ${c("green", "✓")} ${c("bold", "api/comments.js")} aangemaakt`);
+  return true;
+}
+
+// ── vercel.json ──────────────────────────────────────────────────────────────
+
+function ensureVercelConfig(rootDir) {
+  const vercelFile = path.join(rootDir, "vercel.json");
+  const apiRewrite = { source: "/api/(.*)", destination: "/api/$1" };
+
+  if (fs.existsSync(vercelFile)) {
+    const config = JSON.parse(fs.readFileSync(vercelFile, "utf-8"));
+    if (!config.rewrites) config.rewrites = [];
+
+    // Check if API rewrite already exists
+    const hasApiRewrite = config.rewrites.some(
+      (r) => r.source === apiRewrite.source
+    );
+    if (hasApiRewrite) {
+      console.log(`  ${c("green", "✓")} ${c("dim", "vercel.json heeft al API rewrite")}`);
+      return false;
+    }
+
+    // Insert API rewrite before any catch-all
+    const catchAllIndex = config.rewrites.findIndex(
+      (r) => r.source === "/(.*)"
+    );
+    if (catchAllIndex !== -1) {
+      config.rewrites.splice(catchAllIndex, 0, apiRewrite);
+    } else {
+      config.rewrites.push(apiRewrite);
+    }
+
+    fs.writeFileSync(vercelFile, JSON.stringify(config, null, 2) + "\n", "utf-8");
+    console.log(`  ${c("green", "✓")} ${c("bold", "vercel.json")} API rewrite toegevoegd`);
+    return true;
+  }
+
+  // Create new vercel.json
+  const config = {
+    rewrites: [
+      apiRewrite,
+      { source: "/(.*)", destination: "/index.html" },
+    ],
+  };
+  fs.writeFileSync(vercelFile, JSON.stringify(config, null, 2) + "\n", "utf-8");
+  console.log(`  ${c("green", "✓")} ${c("bold", "vercel.json")} aangemaakt`);
   return true;
 }
 
@@ -201,18 +321,20 @@ function wrapWithProvider(content) {
     const closingTag = lastCloseTagMatch[1];
 
     wrappedJsx =
-      `\n${indent}<AnnotationProvider annotations={annotations} currentRoute={${locationVar}.pathname}>\n` +
+      `\n${indent}<AnnotationProvider annotations={annotations} currentRoute={${locationVar}.pathname} comments={{ enabled: true, apiBase: '', project: 'my-project' }}>\n` +
       `${before.trimEnd()}\n` +
       `${indent}  <AnnotationButton />\n` +
       `${indent}  <AnnotationPanel />\n` +
+      `${indent}  <Inspector />\n` +
       `${indent}${closingTag}\n` +
       `${indent}</AnnotationProvider>\n  `;
   } else {
     wrappedJsx =
-      `\n${indent}<AnnotationProvider annotations={annotations} currentRoute={${locationVar}.pathname}>\n` +
+      `\n${indent}<AnnotationProvider annotations={annotations} currentRoute={${locationVar}.pathname} comments={{ enabled: true, apiBase: '', project: 'my-project' }}>\n` +
       `${innerJsx.trimEnd()}\n` +
       `${indent}  <AnnotationButton />\n` +
       `${indent}  <AnnotationPanel />\n` +
+      `${indent}  <Inspector />\n` +
       `${indent}</AnnotationProvider>\n  `;
   }
 
@@ -220,16 +342,34 @@ function wrapWithProvider(content) {
 }
 
 function findReturnStatement(content) {
-  // Find "return" that's followed by "(" — the main component return
-  // We want the return that's inside the component with useLocation
+  // Find "return (" that contains JSX, skipping hook cleanups like "return () =>"
   const locationIndex = content.indexOf("useLocation()");
   if (locationIndex === -1) return -1;
 
   // Search for return statements after useLocation
   const regex = /\breturn\s*\(/g;
   regex.lastIndex = locationIndex;
-  const match = regex.exec(content);
-  return match ? match.index : -1;
+
+  let lastJsxReturn = -1;
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    const afterParen = content.slice(match.index + match[0].length).trimStart();
+    // Skip cleanup returns: "return () =>" or "return (function"
+    if (afterParen.startsWith(")") && /^\)\s*=>/.test(afterParen)) continue;
+    if (afterParen.startsWith("function")) continue;
+
+    // Check if this return contains JSX (has a < tag)
+    const parenStart = content.indexOf("(", match.index);
+    const parenEnd = findMatchingParen(content, parenStart);
+    if (parenEnd === -1) continue;
+
+    const inner = content.slice(parenStart + 1, parenEnd);
+    if (/<\w/.test(inner)) {
+      lastJsxReturn = match.index;
+    }
+  }
+
+  return lastJsxReturn;
 }
 
 function findMatchingParen(content, openIndex) {
@@ -275,7 +415,17 @@ function main() {
   const dataCreated = ensureDataFile(rootDir);
   console.log("");
 
-  // Step 2: Find and modify layout file
+  // Step 2: Create API route
+  console.log(c("dim", "  ─ API route ─────────────────────────────"));
+  ensureApiRoute(rootDir);
+  console.log("");
+
+  // Step 3: Ensure vercel.json
+  console.log(c("dim", "  ─ Vercel config ─────────────────────────"));
+  ensureVercelConfig(rootDir);
+  console.log("");
+
+  // Step 4: Find and modify layout file
   console.log(c("dim", "  ─ Layout file ───────────────────────────"));
   const layoutFile = findLayoutFile(rootDir);
 
@@ -285,10 +435,11 @@ function main() {
     console.log(c("dim", "  Voorbeeld:"));
     console.log(c("dim", `  ${ANNOTATION_IMPORT}`));
     console.log(c("dim", `  ${DATA_IMPORT}\n`));
-    console.log(c("dim", "  <AnnotationProvider annotations={annotations} currentRoute={location.pathname}>"));
+    console.log(c("dim", "  <AnnotationProvider annotations={annotations} currentRoute={location.pathname} comments={{ enabled: true, apiBase: '', project: 'my-project' }}>"));
     console.log(c("dim", "    {/* je app */}"));
     console.log(c("dim", "    <AnnotationButton />"));
     console.log(c("dim", "    <AnnotationPanel />"));
+    console.log(c("dim", "    <Inspector />"));
     console.log(c("dim", "  </AnnotationProvider>\n"));
 
     if (dataCreated) {
@@ -324,17 +475,18 @@ function main() {
   fs.writeFileSync(layoutFile, wrapped, "utf-8");
   console.log(`  ${c("green", "✓")} ${c("bold", layoutRelPath)} aangepast`);
   console.log(c("dim", "    + imports toegevoegd"));
-  console.log(c("dim", "    + AnnotationProvider wrapper toegevoegd"));
-  console.log(c("dim", "    + AnnotationButton & AnnotationPanel toegevoegd"));
+  console.log(c("dim", "    + AnnotationProvider wrapper + comments config toegevoegd"));
+  console.log(c("dim", "    + AnnotationButton, AnnotationPanel & Inspector toegevoegd"));
 
   // Summary
   console.log("");
   console.log(c("dim", "  ─────────────────────────────────────────"));
   console.log(`  ${c("green", "Klaar!")} Annotaties zijn geconfigureerd.\n`);
   console.log(c("dim", "  Volgende stappen:"));
-  console.log(c("dim", "  1. Voeg annotaties toe in src/annotations/data.js"));
-  console.log(c("dim", "  2. Draai annotate-scan om data-annotation-id's te plaatsen"));
-  console.log(c("dim", "  3. Start je app en druk op Cmd+. om het paneel te openen\n"));
+  console.log(c("dim", "  1. Stel NOTION_API_KEY, NOTION_DATABASE_ID en NOTION_PROJECT_ID in als env vars"));
+  console.log(c("dim", "  2. Voeg annotaties toe in src/annotations/data.js"));
+  console.log(c("dim", "  3. Draai annotate-scan om data-annotation-id's te plaatsen"));
+  console.log(c("dim", "  4. Start je app en druk op Cmd+. om het paneel te openen\n"));
 }
 
 main();
