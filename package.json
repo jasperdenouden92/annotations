@@ -18,7 +18,8 @@
     }
   },
   "bin": {
-    "annotate-scan": "./bin/annotate-scan.js"
+    "annotate-scan": "./bin/annotate-scan.js",
+    "annotate-init": "./bin/annotate-init.js"
   },
   "files": [
     "dist",
