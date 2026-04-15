@@ -20,6 +20,30 @@ const DATA_IMPORT = `import { annotations } from './annotations/data'`;
 
 const DATA_FILE_CONTENT = `export const annotations = []\n`;
 
+const CLAUDE_MD_SENTINEL = "<!-- @jasperdenouden92/annotations -->";
+
+const CLAUDE_MD_CONTENT = `${CLAUDE_MD_SENTINEL}
+## Annotations
+
+This project uses \`@jasperdenouden92/annotations\` for annotations and feedback.
+
+**Adding annotations:** edit \`src/annotations/data.js\` — append an object to the array. NEVER put annotation content directly in component files.
+
+**Annotation object:**
+- \`id\` — unique string (increment from highest existing)
+- \`target\` — route pattern: \`"/"\`, \`"/settings"\`, \`"/users/:id"\`, or \`"global"\` for all pages
+- \`elementId\` — (optional) matches \`data-annotation-id="..."\` or \`id="..."\` on a DOM element
+- \`title\` — short heading
+- \`body\` — explanation text
+- \`author\` — name of the person
+- \`date\` — ISO date (YYYY-MM-DD)
+- \`type\` — (optional) \`documentation\` | \`pro\` | \`question\` | \`con\` | \`suggestion\` | \`critical\` | \`user-insight\`
+
+**Linking to an element:** set \`elementId\` to match a \`data-annotation-id\` attribute on the target element. Run \`npx annotate-scan\` to auto-add \`data-annotation-id\` attributes to UI components.
+
+**Feedback/comments:** managed via the UI (Inspector mode) and the \`/api/comments\` endpoint, not via code.
+`;
+
 const API_COMMENTS_CONTENT = `import { buildNotionCommentProperties, parseNotionComment } from '@jasperdenouden92/annotations/server'
 
 const { NOTION_API_KEY, NOTION_DATABASE_ID, NOTION_PROJECT_ID } = process.env
@@ -194,6 +218,28 @@ function ensureVercelConfig(rootDir) {
   };
   fs.writeFileSync(vercelFile, JSON.stringify(config, null, 2) + "\n", "utf-8");
   console.log(`  ${c("green", "✓")} ${c("bold", "vercel.json")} aangemaakt`);
+  return true;
+}
+
+// ── CLAUDE.md for AI agents ─────────────────────────────────────────────────
+
+function ensureClaudeMd(rootDir) {
+  const claudeFile = path.join(rootDir, "CLAUDE.md");
+
+  if (fs.existsSync(claudeFile)) {
+    const content = fs.readFileSync(claudeFile, "utf-8");
+    if (content.includes(CLAUDE_MD_SENTINEL)) {
+      console.log(`  ${c("green", "✓")} ${c("dim", "CLAUDE.md heeft al annotations sectie")}`);
+      return false;
+    }
+
+    fs.writeFileSync(claudeFile, content.trimEnd() + "\n\n" + CLAUDE_MD_CONTENT, "utf-8");
+    console.log(`  ${c("green", "✓")} ${c("bold", "CLAUDE.md")} annotations sectie toegevoegd`);
+    return true;
+  }
+
+  fs.writeFileSync(claudeFile, CLAUDE_MD_CONTENT, "utf-8");
+  console.log(`  ${c("green", "✓")} ${c("bold", "CLAUDE.md")} aangemaakt`);
   return true;
 }
 
@@ -523,8 +569,13 @@ function main() {
     console.log(c("dim", "    <Inspector />"));
     console.log(c("dim", "  </AnnotationProvider>\n"));
 
+    // Still generate CLAUDE.md even without layout file
+    console.log("");
+    console.log(c("dim", "  ─ AI agent instructions ─────────────────"));
+    ensureClaudeMd(rootDir);
+
     if (dataCreated) {
-      console.log(c("green", "  Klaar!") + " Data-bestand aangemaakt, layout moet handmatig worden aangepast.\n");
+      console.log(c("green", "\n  Klaar!") + " Data-bestand aangemaakt, layout moet handmatig worden aangepast.\n");
     }
     process.exit(0);
   }
@@ -558,6 +609,11 @@ function main() {
   console.log(c("dim", "    + imports toegevoegd"));
   console.log(c("dim", "    + AnnotationProvider wrapper + comments config toegevoegd"));
   console.log(c("dim", "    + AnnotationButton, AnnotationPanel & Inspector toegevoegd"));
+
+  // Step 6: CLAUDE.md for AI agents
+  console.log("");
+  console.log(c("dim", "  ─ AI agent instructions ─────────────────"));
+  ensureClaudeMd(rootDir);
 
   // Summary
   console.log("");
