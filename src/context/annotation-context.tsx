@@ -5,11 +5,13 @@ import type {
   PanelCorner,
 } from "../types";
 import { DEFAULT_LABELS, DEFAULT_SETTINGS, STORAGE_KEY_PANEL_CORNER } from "../constants";
+import { useAnnotationStyles } from "../styles/inject";
+import { applyRuntimeTokens } from "../styles/brand";
 import { matchRoute } from "../utils/route-matching";
-import { Inspector } from "../components/Inspector";
-import { FeedbackMarkers } from "../components/FeedbackMarkers";
-import { AutoAnnotationMarkers } from "../components/AutoAnnotationMarkers";
-import { useAllComments } from "../hooks/useAllComments";
+import { Inspector } from "../components/inspector";
+import { FeedbackMarkers } from "../components/feedback-markers";
+import { AutoAnnotationMarkers } from "../components/auto-annotation-markers";
+import { useAllComments } from "../hooks/use-all-comments";
 
 export const AnnotationContext = createContext<AnnotationContextValue | null>(null);
 
@@ -21,6 +23,8 @@ export function AnnotationProvider({
   comments: commentsConfig,
   children,
 }: AnnotationProviderProps) {
+  useAnnotationStyles();
+
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -31,6 +35,13 @@ export function AnnotationProvider({
   const labels = useMemo(
     () => ({ ...DEFAULT_LABELS, ...labelsOverride }),
     [labelsOverride]
+  );
+
+  // The settings-driven half of the token layer: one brand colour, plus the label
+  // colour that keeps enough contrast on top of it, plus the stacking base.
+  useEffect(
+    () => applyRuntimeTokens(settings.accentColor, settings.zIndex),
+    [settings.accentColor, settings.zIndex]
   );
 
   const [annotationMode, setAnnotationMode] = useState(false);

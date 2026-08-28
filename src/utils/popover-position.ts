@@ -62,8 +62,28 @@ export function getFixedPopoverStyle(
     left: horizontal === "align-left" ? rect.left : undefined,
     right: horizontal === "align-right" ? window.innerWidth - rect.right : undefined,
     width: popoverWidth,
-    maxHeight: popoverMaxHeight,
+    maxHeight: availableHeight(rect, vertical, gap, popoverMaxHeight),
   };
+}
+
+/**
+ * The most a popover can use without running off screen. Without this the caller's
+ * maximum is the only limit, so a popover either scrolls earlier than it needs to
+ * or spills past the viewport edge.
+ */
+function availableHeight(
+  rect: DOMRect,
+  vertical: PopoverPlacement["vertical"],
+  gap: number,
+  requested: number,
+  margin = 16
+): number {
+  const space =
+    vertical === "below"
+      ? window.innerHeight - rect.bottom - gap - margin
+      : rect.top - gap - margin;
+
+  return Math.max(240, Math.min(requested, space));
 }
 
 /**
@@ -90,5 +110,6 @@ export function getAbsolutePopoverStyle(
     marginBottom: vertical === "above" ? gap : undefined,
     left: horizontal === "align-left" ? 0 : undefined,
     right: horizontal === "align-right" ? 0 : undefined,
+    maxHeight: availableHeight(containerRect, vertical, gap, popoverMaxHeight),
   };
 }

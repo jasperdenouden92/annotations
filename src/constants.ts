@@ -36,22 +36,5 @@ export const DEFAULT_SETTINGS: Required<AnnotationSettings> = {
 
 export const STORAGE_KEY_PANEL_CORNER = "@jasperdenouden92/annotations:panelCorner";
 
-export const TYPE_COLORS: Record<AnnotationType, { bg: string; border: string; text: string }> = {
-  documentation: { bg: "#F5F5F5", border: "#D0D5DD", text: "#344054" },
-  pro:           { bg: "#ECFDF3", border: "#ABEFC6", text: "#067647" },
-  question:      { bg: "#EFF8FF", border: "#B2DDFF", text: "#175CD3" },
-  con:           { bg: "#FEF3F2", border: "#FECDCA", text: "#B42318" },
-  suggestion:    { bg: "#F4F3FF", border: "#D9D6FE", text: "#5925DC" },
-  critical:      { bg: "#FFF4ED", border: "#F9DBAF", text: "#B93815" },
-  "user-insight": { bg: "#FDF2FA", border: "#FCCEEE", text: "#C11574" },
-};
-
-export const PANEL_COLORS = {
-  bg: "#FFFFFF",
-  bgHover: "#F9FAFB",
-  bgActive: "#F2F4F7",
-  border: "#EAECF0",
-  textPrimary: "#101828",
-  textSecondary: "#475467",
-  textMuted: "#98A2B3",
-};
+// Colours live in src/styles/tokens.ts as CSS custom properties. Nothing here
+// should carry a colour value: the check:tokens script fails the build if it does.

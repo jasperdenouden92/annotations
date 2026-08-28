@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { AnnotationContext } from "./AnnotationContext";
+import { AnnotationContext } from "./annotation-context";
 import type { AnnotationContextValue } from "../types";
 import { DEFAULT_LABELS, DEFAULT_SETTINGS } from "../constants";
 
