@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useAnnotations } from "../context/useAnnotations";
-import { useAllComments } from "../hooks/useAllComments";
+import { useAnnotations } from "../context/use-annotations";
+import { useAllComments } from "../hooks/use-all-comments";
+import { useAnnotationStyles } from "../styles/inject";
+import { cx } from "../utils/cx";
 import { getButtonPosition, snapToCorner } from "../utils/drag";
 import { matchRoute } from "../utils/route-matching";
 import { MessageSquareTextIcon } from "../icons";
@@ -8,6 +10,8 @@ import { MessageSquareTextIcon } from "../icons";
 const DRAG_THRESHOLD = 5; // px before a mousedown becomes a drag
 
 export function AnnotationButton() {
+  useAnnotationStyles();
+
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const {
@@ -20,7 +24,6 @@ export function AnnotationButton() {
     currentAnnotations,
     currentRoute,
     labels,
-    settings,
     commentsConfig,
   } = useAnnotations();
 
@@ -77,57 +80,32 @@ export function AnnotationButton() {
     }
   };
 
+  const toggleLabel = annotationMode ? labels.toggleHide : labels.toggleShow;
+  // aria-label wins over anything inside the button, so the counter has to be part
+  // of the label itself rather than a visually hidden span.
+  const label =
+    totalCount > 0
+      ? `${toggleLabel} — ${totalCount} op deze pagina`
+      : toggleLabel;
+
   return React.createElement(
     "button",
     {
+      type: "button",
       "data-annotation-button": "",
+      className: cx("szan-root", "szan-fab", isDragging && "szan-fab--dragging"),
+      style: getButtonPosition(panelCorner),
       onClick: handleClick,
       onMouseDown: handleMouseDown,
-      title: annotationMode ? labels.toggleHide : labels.toggleShow,
-      "aria-label": annotationMode ? labels.toggleHide : labels.toggleShow,
-      style: {
-        ...getButtonPosition(panelCorner),
-        zIndex: settings.zIndex + 999,
-        width: 40,
-        height: 40,
-        borderRadius: 8,
-        background: "#FFFFFF",
-        color: "#344054",
-        border: "1px solid #D0D5DD",
-        cursor: isDragging ? "grabbing" : "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        boxShadow: "0px 1px 2px rgba(16,24,40,0.05)",
-        transition: isDragging ? "none" : "all 0.15s ease",
-      } as React.CSSProperties,
+      title: toggleLabel,
+      "aria-label": label,
+      "aria-expanded": annotationMode && panelOpen,
     },
-    React.createElement(MessageSquareTextIcon, {
-      size: 20,
-      color: "#667085",
-    }),
+    React.createElement(MessageSquareTextIcon, { size: 20 }),
     totalCount > 0 &&
       React.createElement(
         "span",
-        {
-          style: {
-            position: "absolute",
-            top: -6,
-            right: -6,
-            minWidth: 18,
-            height: 18,
-            borderRadius: 9,
-            background: "#B42318",
-            border: "2px solid #FFFFFF",
-            color: "#FFFFFF",
-            fontSize: 11,
-            fontWeight: 600,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "0 4px",
-          } as React.CSSProperties,
-        },
+        { className: "szan-fab__count", "aria-hidden": true },
         totalCount
       )
   );

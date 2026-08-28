@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { PANEL_COLORS } from "../constants";
+import { useAnnotationStyles } from "../styles/inject";
+import { useStableId } from "../utils/use-stable-id";
+import { AlertCircleIcon } from "../icons";
 
 const STORAGE_KEY_NAME = "@jasperdenouden92/annotations:commentAuteur";
 
@@ -8,8 +10,14 @@ interface CommentFormProps {
 }
 
 export function CommentForm({ onSubmit }: CommentFormProps) {
+  useAnnotationStyles();
+
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  const nameId = useStableId("szan-name");
+  const commentId = useStableId("szan-comment");
+  const errorId = useStableId("szan-error");
 
   const [auteur, setAuteur] = useState(() => {
     if (typeof window === "undefined") return "";
@@ -48,76 +56,54 @@ export function CommentForm({ onSubmit }: CommentFormProps) {
     }
   };
 
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "8px 12px",
-    fontSize: 14,
-    fontFamily: "inherit",
-    border: `1px solid ${PANEL_COLORS.border}`,
-    borderRadius: 8,
-    outline: "none",
-    color: PANEL_COLORS.textPrimary,
-    background: "#FFFFFF",
-    boxSizing: "border-box",
-  };
-
   return React.createElement(
     "form",
-    {
-      onSubmit: handleSubmit,
-      style: {
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        marginTop: 12,
-      } as React.CSSProperties,
-    },
+    { className: "szan-root szan-form", onSubmit: handleSubmit },
+
+    React.createElement("label", { className: "szan-sr-only", htmlFor: nameId }, "Naam"),
     React.createElement("input", {
+      id: nameId,
+      className: "szan-input",
       type: "text",
+      autoComplete: "name",
       placeholder: "Naam",
       value: auteur,
       onChange: (e: React.ChangeEvent<HTMLInputElement>) => setAuteur(e.target.value),
-      style: inputStyle,
+      "aria-invalid": error ? true : undefined,
+      "aria-describedby": error ? errorId : undefined,
     }),
+
+    React.createElement(
+      "label",
+      { className: "szan-sr-only", htmlFor: commentId },
+      "Comment"
+    ),
     React.createElement("textarea", {
+      id: commentId,
+      className: "szan-input szan-textarea",
       placeholder: "Schrijf een comment...",
       value: comment,
-      onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => setComment(e.target.value),
       rows: 3,
-      style: {
-        ...inputStyle,
-        resize: "vertical",
-      } as React.CSSProperties,
+      onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => setComment(e.target.value),
+      "aria-invalid": error ? true : undefined,
+      "aria-describedby": error ? errorId : undefined,
     }),
+
+    // role="alert" so the failure is announced, not only shown in red.
     error &&
       React.createElement(
         "div",
-        {
-          style: {
-            fontSize: 12,
-            color: "#B42318",
-          },
-        },
+        { id: errorId, className: "szan-error", role: "alert" },
+        React.createElement(AlertCircleIcon, { size: 14 }),
         error
       ),
+
     React.createElement(
       "button",
       {
         type: "submit",
+        className: "szan-button",
         disabled: isSubmitting || !auteur.trim() || !comment.trim(),
-        style: {
-          alignSelf: "flex-end",
-          padding: "8px 16px",
-          fontSize: 14,
-          fontFamily: "inherit",
-          fontWeight: 600,
-          color: "#FFFFFF",
-          background: isSubmitting ? "#98A2B3" : "#344054",
-          border: "none",
-          borderRadius: 8,
-          cursor: isSubmitting ? "not-allowed" : "pointer",
-          opacity: !auteur.trim() || !comment.trim() ? 0.5 : 1,
-        } as React.CSSProperties,
       },
       isSubmitting ? "Versturen..." : "Verstuur"
     )

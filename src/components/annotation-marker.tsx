@@ -1,0 +1,163 @@
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useAnnotationsSafe } from "../context/use-annotations-safe";
+import { useComments } from "../hooks/use-comments";
+import { useAnnotationStyles } from "../styles/inject";
+import { cx } from "../utils/cx";
+import { useStableId } from "../utils/use-stable-id";
+import { getAbsolutePopoverStyle } from "../utils/popover-position";
+import { MarkerBadge } from "./marker-badge";
+import { AnnotationPopover } from "./annotation-popover";
+import { MARKER_CORNERS, POPOVER_MAX_HEIGHT, feedbackCorner } from "./marker-geometry";
+import type { MarkerPosition, Annotation } from "../types";
+
+interface AnnotationMarkerProps {
+  annotationId: string;
+  children: React.ReactNode;
+  position?: MarkerPosition;
+  className?: string;
+}
+
+export function AnnotationMarker({
+  annotationId,
+  children,
+  position = "top-right",
+  className,
+}: AnnotationMarkerProps) {
+  useAnnotationStyles();
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const popoverId = useStableId("szan-popover");
+
+  const {
+    annotationMode,
+    inspectorActive,
+    activeAnnotationId,
+    hoveredAnnotationId,
+    setActiveAnnotationId,
+    setHoveredAnnotationId,
+    setPanelOpen,
+    commentsConfig,
+    allAnnotations,
+    allComments,
+    registerMarkerId,
+    unregisterMarkerId,
+  } = useAnnotationsSafe();
+
+  // Register this marker so AutoAnnotationMarkers skips it
+  useEffect(() => {
+    registerMarkerId(annotationId);
+    return () => unregisterMarkerId(annotationId);
+  }, [annotationId, registerMarkerId, unregisterMarkerId]);
+
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const isActive = activeAnnotationId === annotationId;
+  const matchingAnnotations = allAnnotations.filter((a) => a.id === annotationId);
+  const annotation = matchingAnnotations[0] as Annotation | undefined;
+  const annotationLabel = annotation?.title ?? annotationId;
+
+  const { comments, isLoading, error, submitComment } = useComments({
+    apiBase: commentsConfig?.apiBase ?? "",
+    project: commentsConfig?.project ?? "",
+    annotationId,
+    label: annotationLabel,
+    enabled: !!commentsConfig && isActive,
+  });
+
+  const showMarkers = mounted && (annotationMode || inspectorActive);
+  const isHovered = hoveredAnnotationId === annotationId;
+  const annotationType = annotation?.type ?? "documentation";
+
+  // Feedback badge: filter allComments for this annotationId
+  const elementComments = commentsConfig
+    ? allComments.filter((c) => c.annotationId === annotationId)
+    : [];
+  const openCommentCount = elementComments.filter((c) => c.status !== "Opgelost").length;
+  const hasComments = elementComments.length > 0;
+  const allResolved = hasComments && openCommentCount === 0;
+
+  // Closing puts focus back on the badge that opened the popover, so keyboard
+  // users are not dropped at the top of the document.
+  const close = useCallback(() => {
+    setActiveAnnotationId(null);
+    wrapperRef.current?.querySelector<HTMLElement>("button.szan-marker")?.focus();
+  }, [setActiveAnnotationId]);
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveAnnotationId(isActive ? null : annotationId);
+    if (!isActive) setPanelOpen(true);
+  };
+
+  return React.createElement(
+    "div",
+    { className: cx("szan-contents", className) },
+    React.createElement(
+      "div",
+      {
+        ref: wrapperRef,
+        // Deliberately no `szan-root` here: this element wraps the consumer's own
+        // components, and the reset that comes with szan-root would strip their
+        // styling. The ring needs no reset, and the badges inside carry their own.
+        className: cx(
+          "szan-marker-wrap",
+          showMarkers && (isActive || isHovered) && "szan-marker-wrap--lit",
+          showMarkers && isActive && "szan-marker-wrap--active"
+        ),
+        "data-szan-type": annotationType,
+      },
+      children,
+
+      showMarkers &&
+        React.createElement(MarkerBadge, {
+          variant: "annotation",
+          type: annotationType,
+          count: matchingAnnotations.length > 1 ? matchingAnnotations.length : undefined,
+          label: `Annotatie: ${annotationLabel}`,
+          placement: "absolute",
+          style: MARKER_CORNERS[position],
+          active: isActive,
+          controls: popoverId,
+          onClick: handleClick,
+          onMouseEnter: () => setHoveredAnnotationId(annotationId),
+          onMouseLeave: () => setHoveredAnnotationId(null),
+        }),
+
+      showMarkers &&
+        hasComments &&
+        React.createElement(MarkerBadge, {
+          variant: "feedback",
+          resolved: allResolved,
+          count: openCommentCount,
+          label: allResolved
+            ? `${elementComments.length} feedback, alles opgelost`
+            : `${openCommentCount} open feedback`,
+          placement: "absolute",
+          behind: true,
+          style: feedbackCorner(position),
+        }),
+
+      showMarkers &&
+        isActive &&
+        React.createElement(AnnotationPopover, {
+          id: popoverId,
+          annotation,
+          showComments: !!commentsConfig,
+          comments,
+          isLoading,
+          error,
+          onSubmit: submitComment,
+          onClose: close,
+          style: wrapperRef.current
+            ? getAbsolutePopoverStyle(
+                wrapperRef.current.getBoundingClientRect(),
+                300,
+                POPOVER_MAX_HEIGHT
+              )
+            : { position: "absolute", top: "100%", left: 0, marginTop: 8 },
+        })
+    )
+  );
+}

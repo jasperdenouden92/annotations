@@ -43,3 +43,36 @@ export function matchRoute(pattern: string, path: string): boolean {
 
   return true;
 }
+
+/**
+ * Turns a route target into a readable trail: "/projects/3?tab=kpi" reads as
+ * "projects / 3 / tab=kpi". Used by the annotation cards and the feedback list,
+ * which had grown two copies of this.
+ */
+export function routeBreadcrumb(target: string): string {
+  if (!target) return "";
+
+  const [path, search] = target.split("?");
+  const pathParts = path.replace(/^\//, "").split("/").filter(Boolean);
+
+  if (!search) return pathParts.join(" / ") || "global";
+
+  const queryParts = Array.from(new URLSearchParams(search).entries()).map(
+    ([key, value]) => `${key}=${value}`
+  );
+  return [...pathParts, ...queryParts].join(" / ");
+}
+
+/** Pushes a route target onto history and lets a listening router pick it up. */
+export function navigateTo(target: string): void {
+  if (!target || target === "global") return;
+
+  const url = target.startsWith("?")
+    ? `/${target}`
+    : target.startsWith("/")
+      ? target
+      : `/${target}`;
+
+  window.history.pushState(null, "", url);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}

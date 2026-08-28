@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useAnnotationsSafe } from "../context/useAnnotationsSafe";
-import { useComments } from "../hooks/useComments";
-import { CommentThread } from "./CommentThread";
-import { CommentForm } from "./CommentForm";
+import { useAnnotationsSafe } from "../context/use-annotations-safe";
+import { useComments } from "../hooks/use-comments";
+import { useAnnotationStyles, useInspectorCursor } from "../styles/inject";
+import { cx } from "../utils/cx";
+import { useStableId } from "../utils/use-stable-id";
 import { getElementLabel, getElementPath } from "../utils/element-id";
 import { getInspectorButtonPosition, snapToCorner } from "../utils/drag";
-import { PANEL_COLORS } from "../constants";
 import { getFixedPopoverStyle } from "../utils/popover-position";
-import { XIcon } from "../icons";
+import { AnnotationPopover } from "./annotation-popover";
+import { CrosshairIcon, XIcon } from "../icons";
 
 const DRAG_THRESHOLD = 5;
 
@@ -45,19 +46,9 @@ function InspectorPopover({
   selected: SelectedElement;
   onClose: () => void;
 }) {
-  const popoverRef = useRef<HTMLDivElement>(null);
-  const { commentsConfig, settings } = useAnnotationsSafe();
+  const { commentsConfig } = useAnnotationsSafe();
+  const popoverId = useStableId("szan-inspector-popover");
 
-  // Move focus out of popover before closing to prevent aria-hidden conflict
-  const handleClose = useCallback(() => {
-    if (
-      popoverRef.current &&
-      popoverRef.current.contains(document.activeElement)
-    ) {
-      (document.activeElement as HTMLElement)?.blur();
-    }
-    onClose();
-  }, [onClose]);
   const { comments, isLoading, error, submitComment } = useComments({
     apiBase: commentsConfig?.apiBase ?? "",
     project: commentsConfig?.project ?? "",
@@ -66,85 +57,61 @@ function InspectorPopover({
     enabled: !!commentsConfig,
   });
 
-  const style: React.CSSProperties = {
-    ...getFixedPopoverStyle(selected.rect, 320, 420),
-    overflowY: "auto",
-    zIndex: settings.zIndex + 50,
-    background: PANEL_COLORS.bg,
-    border: `1px solid ${PANEL_COLORS.border}`,
-    borderRadius: 12,
-    boxShadow: "0px 12px 16px -4px rgba(16,24,40,0.08), 0px 4px 6px -2px rgba(16,24,40,0.03)",
-    padding: 16,
-    fontFamily:
-      'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-  };
-
-  return React.createElement(
+  const header = React.createElement(
     "div",
-    {
-      ref: popoverRef,
-      [DATA_INSPECTOR]: "",
-      style,
-      onClick: (e: React.MouseEvent) => e.stopPropagation(),
-    },
-    // Header
+    { className: "szan-popover__section" },
     React.createElement(
       "div",
-      {
-        style: {
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 8,
-        } as React.CSSProperties,
-      },
-      React.createElement(
-        "div",
-        {
-          style: {
-            fontSize: 13,
-            color: PANEL_COLORS.textMuted,
-            fontFamily: "monospace",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-            flex: 1,
-            marginRight: 8,
-          } as React.CSSProperties,
-        },
-        selected.label
-      ),
+      { className: "szan-popover__header" },
+      React.createElement("div", { className: "szan-mono" }, selected.label),
       React.createElement(
         "button",
         {
-          onClick: handleClose,
-          style: {
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 2,
-            display: "flex",
-            flexShrink: 0,
-          } as React.CSSProperties,
+          type: "button",
+          className: "szan-icon-button",
+          onClick: onClose,
+          "aria-label": "Sluit feedbackvenster",
         },
-        React.createElement(XIcon, { size: 14, color: PANEL_COLORS.textMuted })
+        React.createElement(XIcon, { size: 16 })
       )
-    ),
-    // Thread + form
-    React.createElement(CommentThread, { comments, isLoading, error }),
-    React.createElement(CommentForm, { onSubmit: submitComment })
+    )
   );
+
+  return React.createElement(AnnotationPopover, {
+    id: popoverId,
+    header,
+    showComments: true,
+    comments,
+    isLoading,
+    error,
+    onSubmit: submitComment,
+    onClose,
+    variant: "inspector",
+    style: getFixedPopoverStyle(selected.rect, 320, 420),
+    extraProps: { [DATA_INSPECTOR]: "" },
+  });
 }
 
 export function Inspector() {
-  const { commentsConfig, settings, panelCorner, setPanelCorner, inspectorActive: active, setInspectorActive: setActive } = useAnnotationsSafe();
+  useAnnotationStyles();
+
+  const {
+    commentsConfig,
+    panelCorner,
+    setPanelCorner,
+    inspectorActive: active,
+    setInspectorActive: setActive,
+  } = useAnnotationsSafe();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
   const [selected, setSelected] = useState<SelectedElement | null>(null);
   const hoveredRef = useRef<HTMLElement | null>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef({ startX: 0, startY: 0, didDrag: false });
+
+  useInspectorCursor(active && !selected);
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
@@ -234,21 +201,21 @@ export function Inspector() {
       });
       setHoverRect(null);
     },
-    [active]
+    [active, setActive]
   );
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (selected) {
-          setSelected(null);
-        } else if (active) {
-          setActive(false);
-          setHoverRect(null);
-        }
+      if (e.key !== "Escape") return;
+      if (selected) {
+        setSelected(null);
+      } else if (active) {
+        setActive(false);
+        setHoverRect(null);
+        toggleRef.current?.focus();
       }
     },
-    [active, selected]
+    [active, selected, setActive]
   );
 
   useEffect(() => {
@@ -279,16 +246,6 @@ export function Inspector() {
     };
   }, [selected]);
 
-  // Cursor override: inject <style> via useEffect to avoid SSR hydration mismatch
-  useEffect(() => {
-    if (!active || selected) return;
-    const style = document.createElement("style");
-    style.setAttribute(DATA_INSPECTOR, "");
-    style.textContent = "* { cursor: crosshair !important; }";
-    document.head.appendChild(style);
-    return () => { style.remove(); };
-  }, [active, selected]);
-
   if (!mounted || !commentsConfig) return null;
 
   const handleButtonMouseDown = (e: React.MouseEvent) => {
@@ -317,11 +274,23 @@ export function Inspector() {
     window.addEventListener("mouseup", handleMouseUp);
   };
 
-  // Toggle button — positioned above the AnnotationButton
+  const toggleLabel = active ? "Inspector sluiten" : "Comment plaatsen";
+
   const toggleButton = React.createElement(
     "button",
     {
+      key: "toggle",
+      type: "button",
+      ref: toggleRef,
       [DATA_INSPECTOR]: "",
+      className: cx(
+        "szan-root",
+        "szan-fab",
+        "szan-fab--inspector",
+        active && "szan-fab--active",
+        isDragging && "szan-fab--dragging"
+      ),
+      style: getInspectorButtonPosition(panelCorner),
       onClick: () => {
         if (dragRef.current.didDrag) return;
         setActive(!active);
@@ -329,93 +298,58 @@ export function Inspector() {
         setHoverRect(null);
       },
       onMouseDown: handleButtonMouseDown,
-      title: active ? "Inspector sluiten" : "Comment plaatsen",
-      "aria-label": active ? "Inspector sluiten" : "Comment plaatsen",
-      style: {
-        ...getInspectorButtonPosition(panelCorner),
-        zIndex: settings.zIndex + 10,
-        width: 40,
-        height: 40,
-        borderRadius: 8,
-        background: active ? "#175CD3" : "#FFFFFF",
-        color: active ? "#FFFFFF" : "#344054",
-        border: `1px solid ${active ? "#175CD3" : "#D0D5DD"}`,
-        cursor: isDragging ? "grabbing" : "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        boxShadow:
-          "0px 1px 2px rgba(16,24,40,0.05)",
-        transition: isDragging ? "none" : "all 0.15s ease",
-        fontSize: 18,
-      } as React.CSSProperties,
+      title: toggleLabel,
+      "aria-label": toggleLabel,
+      "aria-pressed": active,
     },
-    // Crosshair / target icon inline
-    React.createElement(
-      "svg",
-      {
-        width: 20,
-        height: 20,
-        viewBox: "0 0 24 24",
-        fill: "none",
-        stroke: active ? "#FFFFFF" : "#667085",
-        strokeWidth: 2,
-        strokeLinecap: "round",
-        strokeLinejoin: "round",
-      },
-      React.createElement("circle", { cx: 12, cy: 12, r: 10 }),
-      React.createElement("line", { x1: 22, y1: 12, x2: 18, y2: 12 }),
-      React.createElement("line", { x1: 6, y1: 12, x2: 2, y2: 12 }),
-      React.createElement("line", { x1: 12, y1: 6, x2: 12, y2: 2 }),
-      React.createElement("line", { x1: 12, y1: 22, x2: 12, y2: 18 })
-    )
+    React.createElement(CrosshairIcon, { size: 20 })
   );
 
-  // Highlight overlay
+  // Picking mode changes how the whole page behaves, so it is announced rather
+  // than left to the button's colour.
+  const announcement = React.createElement(
+    "div",
+    { key: "status", className: "szan-root szan-sr-only", role: "status" },
+    active && !selected ? "Inspectormodus actief. Klik een element aan om feedback te plaatsen, Escape om te stoppen." : ""
+  );
+
   const highlight =
     active && hoverRect && !selected
       ? React.createElement("div", {
+          key: "hover",
           [DATA_INSPECTOR]: "",
+          className: "szan-root szan-overlay",
           style: {
-            position: "fixed",
             left: hoverRect.left,
             top: hoverRect.top,
             width: hoverRect.width,
             height: hoverRect.height,
-            border: "2px solid #175CD3",
-            borderRadius: 4,
-            background: "rgba(23, 92, 211, 0.06)",
-            pointerEvents: "none",
-            zIndex: settings.zIndex + 40,
-            transition: "all 0.08s ease",
-          } as React.CSSProperties,
+          },
         })
       : null;
 
-  // Selected element outline
   const selectedOutline = selected
     ? React.createElement("div", {
+        key: "selected",
         [DATA_INSPECTOR]: "",
+        className: "szan-root szan-overlay szan-overlay--selected",
         style: {
-          position: "fixed",
           left: selected.rect.left,
           top: selected.rect.top,
           width: selected.rect.width,
           height: selected.rect.height,
-          border: "2px solid #175CD3",
-          borderRadius: 4,
-          background: "rgba(23, 92, 211, 0.08)",
-          pointerEvents: "none",
-          zIndex: settings.zIndex + 40,
-        } as React.CSSProperties,
+        },
       })
     : null;
 
-  // Popover
   const popover = selected
     ? React.createElement(InspectorPopover, {
+        key: "popover",
         selected,
-        onClose: () => setSelected(null),
+        onClose: () => {
+          setSelected(null);
+          toggleRef.current?.focus();
+        },
       })
     : null;
 
@@ -423,6 +357,7 @@ export function Inspector() {
     React.Fragment,
     null,
     toggleButton,
+    announcement,
     highlight,
     selectedOutline,
     popover
