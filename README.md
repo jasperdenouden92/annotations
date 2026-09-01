@@ -1,14 +1,14 @@
 # @jasperdenouden92/annotations
 
-Centrale annotation engine. Eén package, meerdere projecten.
+Central annotation engine. One package, many projects.
 
-## Installatie
+## Installation
 
 ```bash
 npm install @jasperdenouden92/annotations
 ```
 
-Zorg dat je `.npmrc` verwijst naar GitHub Packages:
+Make sure your `.npmrc` points to GitHub Packages:
 ```
 @jasperdenouden92:registry=https://npm.pkg.github.com
 ```
@@ -17,26 +17,26 @@ Zorg dat je `.npmrc` verwijst naar GitHub Packages:
 
 ## Quick start
 
-De snelste manier om te starten is met de CLI:
+The fastest way to get started is the CLI:
 
 ```bash
 npx annotate-init
 ```
 
-Dit automatiseert de volledige setup:
+This automates the full setup:
 
-1. Maakt `src/annotations/data.js` aan met een lege annotations array
-2. Zoekt je root layout-bestand (het bestand dat `useLocation()` gebruikt, bijv. `App.tsx`)
-3. Voegt de benodigde imports toe
-4. Wrapt je layout met `<AnnotationProvider>` en plaatst `<AnnotationButton />` en `<AnnotationPanel />`
+1. Creates `src/annotations/data.js` with an empty annotations array
+2. Finds your root layout file (the one that uses `useLocation()`, e.g. `App.tsx`)
+3. Adds the required imports
+4. Wraps your layout in `<AnnotationProvider>` and adds `<AnnotationButton />` and `<AnnotationPanel />`
 
-Het commando is idempotent — als alles al is geconfigureerd wordt er niks aangepast.
+The command is idempotent: if everything is already configured, nothing changes.
 
 ---
 
-## Handmatige setup
+## Manual setup
 
-### 1. Provider + Button + Panel in je root layout
+### 1. Provider + Button + Panel in your root layout
 
 ```tsx
 import {
@@ -52,7 +52,7 @@ export default function RootLayout() {
 
   return (
     <AnnotationProvider annotations={annotations} currentRoute={pathname}>
-      {/* je app content */}
+      {/* your app content */}
       <Outlet />
 
       <AnnotationButton />
@@ -62,7 +62,7 @@ export default function RootLayout() {
 }
 ```
 
-### 2. Annotations data in je project
+### 2. Annotations data in your project
 
 ```ts
 // src/annotations/data.ts
@@ -72,8 +72,8 @@ export const annotations: Annotation[] = [
   {
     id: "1",
     target: "dashboard",
-    title: "Welkom op het dashboard",
-    body: "Hier vind je een overzicht van alle relevante data.",
+    title: "Welcome to the dashboard",
+    body: "Here you'll find an overview of all the relevant data.",
     author: "Elwin",
     date: "2026-03-30",
     type: "info",
@@ -82,8 +82,8 @@ export const annotations: Annotation[] = [
     id: "2",
     target: "dashboard/orders",
     elementId: "order-table",
-    title: "Nieuwe kolom: status",
-    body: "We hebben een statuskolom toegevoegd zodat je direct ziet waar elke order staat.",
+    title: "New column: status",
+    body: "We added a status column so you can see at a glance where each order stands.",
     author: "Jasper",
     date: "2026-03-31",
     type: "new",
@@ -91,7 +91,7 @@ export const annotations: Annotation[] = [
 ];
 ```
 
-### 3. AnnotationMarker op elementen
+### 3. AnnotationMarker on elements
 
 ```tsx
 import { AnnotationMarker } from "@jasperdenouden92/annotations";
@@ -105,7 +105,7 @@ function OrderTable() {
 }
 ```
 
-### 4. Context stack voor dialogs/panels
+### 4. Context stack for dialogs/panels
 
 ```tsx
 import { useAnnotations } from "@jasperdenouden92/annotations";
@@ -122,21 +122,21 @@ function ConversationDialog() {
 }
 ```
 
-### 5. Automatisch annotation ID's plaatsen
+### 5. Add annotation IDs automatically
 
-Draai de scanner om UI-elementen te vinden en automatisch `data-annotation-id` attributen toe te voegen:
+Run the scanner to find UI elements and add `data-annotation-id` attributes automatically:
 
 ```bash
 npx annotate-scan
 ```
 
-Dit scant je `src/` map op navigatie, tabellen, formulieren, cards, modals, etc. en biedt aan om stabiele ID's toe te voegen. De feedback-inspector herkent deze ID's automatisch wanneer gebruikers comments plaatsen.
+This scans your `src/` folder for navigation, tables, forms, cards, modals, etc. and offers to add stable IDs. The feedback inspector recognises these IDs automatically when users leave comments.
 
-> **Tip:** Na `annotate-init` is `annotate-scan` de logische volgende stap om je UI-elementen te labelen.
+> **Tip:** after `annotate-init`, `annotate-scan` is the logical next step to label your UI elements.
 
-### 6. Server helpers voor de comments API
+### 6. Server helpers for the comments API
 
-Het package exporteert server-side helpers voor je Notion comments API:
+The package exports server-side helpers for your Notion comments API:
 
 ```ts
 import {
@@ -145,7 +145,7 @@ import {
 } from "@jasperdenouden92/annotations/server";
 ```
 
-**POST handler** — bouwt alle Notion properties (inclusief Pagina):
+**POST handler**: builds all the Notion properties (including the `pagina` field):
 
 ```ts
 const { annotationId, auteur, comment, pagina, label } = req.body;
@@ -168,7 +168,7 @@ await fetch(`https://api.notion.com/v1/pages`, {
 });
 ```
 
-**GET handler** — parsed Notion pages naar Comment objecten:
+**GET handler**: parses Notion pages into Comment objects:
 
 ```ts
 const data = await response.json();
@@ -179,19 +179,19 @@ const comments = data.results.map(parseNotionComment);
 
 ## Annotation types
 
-| Type            | Kleur   | Gebruik                          |
-|-----------------|---------|----------------------------------|
-| `documentation` | Grijs   | Uitleg en documentatie           |
-| `pro`           | Groen   | Positief punt, wat goed werkt    |
-| `question`      | Blauw   | Open vraag of onduidelijkheid    |
-| `con`           | Rood    | Negatief punt, probleem          |
-| `suggestion`    | Paars   | Voorstel of verbetering          |
-| `critical`      | Oranje  | Urgent, moet opgelost worden     |
-| `user-insight`  | Roze    | Inzicht uit user testing/feedback|
+| Type            | Colour  | Use                               |
+|-----------------|---------|-----------------------------------|
+| `documentation` | Grey    | Explanation and documentation     |
+| `pro`           | Green   | A positive point, what works well |
+| `question`      | Blue    | An open question or unclear point |
+| `con`           | Red     | A negative point, a problem       |
+| `suggestion`    | Purple  | A proposal or improvement         |
+| `critical`      | Orange  | Urgent, needs fixing              |
+| `user-insight`  | Pink    | An insight from user testing/feedback |
 
 ---
 
-## Configuratie
+## Configuration
 
 ### Settings
 
@@ -200,12 +200,12 @@ const comments = data.results.map(parseNotionComment);
   annotations={data}
   currentRoute={pathname}
   settings={{
-    togglePosition: "bottom-right",  // positie van de button
-    defaultVisible: false,           // start met annotaties aan/uit
-    accentColor: "#1567a4",          // accent kleur
-    panelWidth: 420,                 // panel breedte in px
-    panelHeight: 640,                // panel hoogte in px
-    zIndex: 9000,                    // basis z-index
+    togglePosition: "bottom-right",  // button position
+    defaultVisible: false,           // start with annotations on/off
+    accentColor: "#1567a4",          // accent colour
+    panelWidth: 420,                 // panel width in px
+    panelHeight: 640,                // panel height in px
+    zIndex: 9000,                    // base z-index
     keyboardShortcut: true,          // Cmd+. / Ctrl+. toggle
   }}
 >
@@ -233,24 +233,24 @@ const comments = data.results.map(parseNotionComment);
 
 ## Route matching
 
-Annotations worden gefilterd op basis van `target` vs `currentRoute`:
+Annotations are filtered by `target` against `currentRoute`:
 
-- **Exact match**: `"dashboard/orders"` matcht `/dashboard/orders`
-- **Wildcards**: `"projects/:id/details"` matcht `/projects/123/details`
-- **Global**: `"global"` matcht altijd, op elke pagina
-- **Context**: `"dialog:conversation"` matcht wanneer `pushContext("dialog:conversation")` actief is
+- **Exact match**: `"dashboard/orders"` matches `/dashboard/orders`
+- **Wildcards**: `"projects/:id/details"` matches `/projects/123/details`
+- **Global**: `"global"` always matches, on every page
+- **Context**: `"dialog:conversation"` matches when `pushContext("dialog:conversation")` is active
 
 ---
 
-## Een update deployen
+## Deploying an update
 
 ```bash
-# In dit package:
+# In this package:
 npm version patch   # bug fix
-npm version minor   # nieuwe feature
+npm version minor   # new feature
 npm version major   # breaking change
 npm publish
 
-# In elk project:
+# In each project:
 npm update @jasperdenouden92/annotations
 ```
