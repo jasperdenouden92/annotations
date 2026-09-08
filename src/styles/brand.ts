@@ -1,9 +1,11 @@
 /**
  * Runtime tokens: the ones that depend on the consumer's `settings`, not on the theme.
  *
- * `--szan-brand` drives every other brand token through color-mix(), but the label
- * colour on a solid brand button cannot be mixed — it has to flip between light and
- * dark so the text keeps 4.5:1 whatever colour someone passes as `accentColor`.
+ * `--orbit-brand` (from settings.accentColor) tints the quiet brand tokens — subtle
+ * fill, border, secondary text — through color-mix(). The solid brand surface (the
+ * primary button) is a theme-aware constant in tokens.ts instead, so it stays a
+ * legible high-contrast monochrome in both themes whatever accent someone sets.
+ * `onBrandTextColor` stays exported for consumers who build their own brand button.
  */
 
 const WHITE_LUMINANCE = 1;
@@ -79,13 +81,11 @@ export function applyRuntimeTokens(brand: string, zIndexBase: number): () => voi
   if (typeof document === "undefined") return () => {};
 
   const root = document.documentElement;
-  root.style.setProperty("--szan-brand", brand);
-  root.style.setProperty("--szan-text-primary_on-brand", onBrandTextColor(brand));
-  root.style.setProperty("--szan-z-base", String(zIndexBase));
+  root.style.setProperty("--orbit-brand", brand);
+  root.style.setProperty("--orbit-z-base", String(zIndexBase));
 
   return () => {
-    root.style.removeProperty("--szan-brand");
-    root.style.removeProperty("--szan-text-primary_on-brand");
-    root.style.removeProperty("--szan-z-base");
+    root.style.removeProperty("--orbit-brand");
+    root.style.removeProperty("--orbit-z-base");
   };
 }

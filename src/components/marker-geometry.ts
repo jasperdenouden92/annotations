@@ -1,6 +1,6 @@
 import type { MarkerPosition } from "../types";
 
-/** Visible badge diameter — see `.szan-marker` in src/styles/rules.ts. */
+/** Visible badge diameter — see `.orbit-marker` in src/styles/rules.ts. */
 export const BADGE_SIZE = 28;
 
 /** How far a badge hangs over the corner of the element it marks. */

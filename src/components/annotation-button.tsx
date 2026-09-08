@@ -93,7 +93,7 @@ export function AnnotationButton() {
     {
       type: "button",
       "data-annotation-button": "",
-      className: cx("szan-root", "szan-fab", isDragging && "szan-fab--dragging"),
+      className: cx("orbit-root", "orbit-fab", isDragging && "orbit-fab--dragging"),
       style: getButtonPosition(panelCorner),
       onClick: handleClick,
       onMouseDown: handleMouseDown,
@@ -105,7 +105,7 @@ export function AnnotationButton() {
     totalCount > 0 &&
       React.createElement(
         "span",
-        { className: "szan-fab__count", "aria-hidden": true },
+        { className: "orbit-fab__count", "aria-hidden": true },
         totalCount
       )
   );

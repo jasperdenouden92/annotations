@@ -1,11 +1,11 @@
-# @jasperdenouden92/annotations
+# Orbit
 
-Central annotation engine. One package, many projects.
+`@strakzat/orbit` — central annotation & feedback engine. One package, many projects.
 
 ## Installation
 
 ```bash
-npm install @jasperdenouden92/annotations
+npm install @strakzat/orbit
 ```
 
 Make sure your `.npmrc` points to GitHub Packages:
@@ -20,7 +20,7 @@ Make sure your `.npmrc` points to GitHub Packages:
 The fastest way to get started is the CLI:
 
 ```bash
-npx annotate-init
+npx orbit-init
 ```
 
 This automates the full setup:
@@ -43,7 +43,7 @@ import {
   AnnotationProvider,
   AnnotationButton,
   AnnotationPanel,
-} from "@jasperdenouden92/annotations";
+} from "@strakzat/orbit";
 import { useLocation } from "react-router-dom";
 import { annotations } from "@/annotations/data";
 
@@ -66,7 +66,7 @@ export default function RootLayout() {
 
 ```ts
 // src/annotations/data.ts
-import type { Annotation } from "@jasperdenouden92/annotations";
+import type { Annotation } from "@strakzat/orbit";
 
 export const annotations: Annotation[] = [
   {
@@ -94,7 +94,7 @@ export const annotations: Annotation[] = [
 ### 3. AnnotationMarker on elements
 
 ```tsx
-import { AnnotationMarker } from "@jasperdenouden92/annotations";
+import { AnnotationMarker } from "@strakzat/orbit";
 
 function OrderTable() {
   return (
@@ -108,7 +108,7 @@ function OrderTable() {
 ### 4. Context stack for dialogs/panels
 
 ```tsx
-import { useAnnotations } from "@jasperdenouden92/annotations";
+import { useAnnotations } from "@strakzat/orbit";
 
 function ConversationDialog() {
   const { pushContext, popContext } = useAnnotations();
@@ -127,12 +127,12 @@ function ConversationDialog() {
 Run the scanner to find UI elements and add `data-annotation-id` attributes automatically:
 
 ```bash
-npx annotate-scan
+npx orbit-scan
 ```
 
 This scans your `src/` folder for navigation, tables, forms, cards, modals, etc. and offers to add stable IDs. The feedback inspector recognises these IDs automatically when users leave comments.
 
-> **Tip:** after `annotate-init`, `annotate-scan` is the logical next step to label your UI elements.
+> **Tip:** after `orbit-init`, `orbit-scan` is the logical next step to label your UI elements.
 
 ### 6. Server helpers for the comments API
 
@@ -142,7 +142,7 @@ The package exports server-side helpers for your Notion comments API:
 import {
   buildNotionCommentProperties,
   parseNotionComment,
-} from "@jasperdenouden92/annotations/server";
+} from "@strakzat/orbit/server";
 ```
 
 **POST handler**: builds all the Notion properties (including the `pagina` field):
@@ -252,5 +252,5 @@ npm version major   # breaking change
 npm publish
 
 # In each project:
-npm update @jasperdenouden92/annotations
+npm update @strakzat/orbit
 ```

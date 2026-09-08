@@ -1,5 +1,6 @@
 import React from "react";
 import { cx } from "../utils/cx";
+import { initials, relativeTime } from "../utils/format";
 import { StatusPill } from "./status-pill";
 import type { Comment } from "../types";
 
@@ -19,7 +20,11 @@ interface CommentCardProps {
   onMouseLeave?: () => void;
 }
 
-/** One comment, as it appears in a thread and in the panel's feedback list. */
+/**
+ * One comment, as it appears in a thread and in the panel's feedback list. An avatar
+ * monogram sits in its own column; the author, a relative time and the status share
+ * the first row, the comment text and any admin reply follow beneath.
+ */
 export function CommentCard({
   comment,
   showLabel,
@@ -34,9 +39,9 @@ export function CommentCard({
     "div",
     {
       className: cx(
-        "szan-comment",
-        onSelect && "szan-comment--clickable",
-        isActive && "szan-comment--active"
+        "orbit-comment",
+        onSelect && "orbit-comment--clickable",
+        isActive && "orbit-comment--active"
       ),
       onMouseEnter,
       onMouseLeave,
@@ -47,47 +52,63 @@ export function CommentCard({
         "button",
         {
           type: "button",
-          className: "szan-comment__target",
+          className: "orbit-comment__target",
           onClick: onSelect,
           "aria-expanded": !!isActive,
         },
         React.createElement(
           "span",
-          { className: "szan-sr-only" },
+          { className: "orbit-sr-only" },
           activateLabel ?? `Feedback van ${comment.auteur}`
         )
       ),
 
     showLabel &&
       comment.label &&
-      React.createElement("div", { className: "szan-comment__label" }, comment.label),
+      React.createElement("div", { className: "orbit-comment__label" }, comment.label),
+
+    React.createElement(
+      "span",
+      { className: "orbit-avatar", "aria-hidden": true },
+      initials(comment.auteur)
+    ),
 
     React.createElement(
       "div",
-      { className: "szan-comment__head" },
-      React.createElement("span", { className: "szan-comment__author" }, comment.auteur),
-      React.createElement(StatusPill, { status: comment.status })
-    ),
+      { className: "orbit-comment__body" },
 
-    React.createElement("div", { className: "szan-comment__text" }, comment.comment),
+      React.createElement(
+        "div",
+        { className: "orbit-comment__head" },
+        React.createElement("span", { className: "orbit-comment__author" }, comment.auteur),
+        React.createElement(
+          "span",
+          { className: "orbit-comment__time-rel" },
+          relativeTime(comment.aangemaakt)
+        ),
+        React.createElement(StatusPill, { status: comment.status })
+      ),
 
-    comment.antwoord
-      ? React.createElement(
-          "div",
-          { className: "szan-comment__reply" },
-          React.createElement(
-            "span",
-            { className: "szan-comment__reply-label" },
-            "Antwoord"
-          ),
-          React.createElement(
-            "span",
-            { className: "szan-comment__reply-text" },
-            comment.antwoord
+      React.createElement("div", { className: "orbit-comment__text" }, comment.comment),
+
+      comment.antwoord
+        ? React.createElement(
+            "div",
+            { className: "orbit-comment__reply" },
+            React.createElement(
+              "span",
+              { className: "orbit-comment__reply-label" },
+              "Antwoord"
+            ),
+            React.createElement(
+              "span",
+              { className: "orbit-comment__reply-text" },
+              comment.antwoord
+            )
           )
-        )
-      : null,
+        : null,
 
-    footer
+      footer
+    )
   );
 }

@@ -9,20 +9,6 @@ interface CommentThreadProps {
   error: string | null;
 }
 
-function formatDate(dateStr: string): string {
-  try {
-    return new Date(dateStr).toLocaleDateString("nl-NL", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return dateStr;
-  }
-}
-
 export function CommentThread({ comments, isLoading, error }: CommentThreadProps) {
   useAnnotationStyles();
 
@@ -32,7 +18,7 @@ export function CommentThread({ comments, isLoading, error }: CommentThreadProps
 
   if (comments.length === 0) {
     const [message, isError] = isLoading
-      ? ["Comments laden...", false]
+      ? ["Comments laden…", false]
       : error
         ? ["Fout bij laden comments", true]
         : ["Nog geen comments", false];
@@ -41,7 +27,7 @@ export function CommentThread({ comments, isLoading, error }: CommentThreadProps
     return React.createElement(
       "div",
       {
-        className: isError ? "szan-root szan-empty szan-empty--error" : "szan-root szan-empty",
+        className: isError ? "orbit-root orbit-empty orbit-empty--error" : "orbit-root orbit-empty",
         role: isError ? "alert" : "status",
       },
       message
@@ -50,17 +36,9 @@ export function CommentThread({ comments, isLoading, error }: CommentThreadProps
 
   return React.createElement(
     "div",
-    { className: "szan-root szan-thread" },
+    { className: "orbit-root orbit-thread" },
     ...comments.map((comment) =>
-      React.createElement(CommentCard, {
-        key: comment.id,
-        comment,
-        footer: React.createElement(
-          "div",
-          { className: "szan-comment__time" },
-          formatDate(comment.aangemaakt)
-        ),
-      })
+      React.createElement(CommentCard, { key: comment.id, comment })
     )
   );
 }

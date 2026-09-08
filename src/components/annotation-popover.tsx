@@ -3,7 +3,7 @@ import { cx } from "../utils/cx";
 import { TypeBadge } from "./type-badge";
 import { CommentThread } from "./comment-thread";
 import { CommentForm } from "./comment-form";
-import { MessageSquareTextIcon } from "../icons";
+import { MessageSquareTextIcon, XIcon } from "../icons";
 import type { Annotation, Comment } from "../types";
 
 interface AnnotationPopoverProps {
@@ -58,10 +58,10 @@ export function AnnotationPopover({
     {
       id,
       className: cx(
-        "szan-root",
-        "szan-popover",
-        "szan-animate-in",
-        variant === "inspector" && "szan-popover--inspector"
+        "orbit-root",
+        "orbit-popover",
+        "orbit-animate-in",
+        variant === "inspector" && "orbit-popover--inspector"
       ),
       style,
       role: "group",
@@ -70,18 +70,31 @@ export function AnnotationPopover({
       ...extraProps,
     },
 
+    // Every popover carries its own close button, top-right, so it is dismissable by
+    // click as well as by Escape or re-clicking the pin.
+    React.createElement(
+      "button",
+      {
+        type: "button",
+        className: "orbit-icon-button orbit-popover__close",
+        onClick: onClose,
+        "aria-label": "Sluiten",
+      },
+      React.createElement(XIcon, { size: 16 })
+    ),
+
     header,
 
     annotation &&
       React.createElement(
         "div",
-        { className: "szan-popover__section" },
+        { className: "orbit-popover__section" },
         React.createElement(TypeBadge, { type }),
-        React.createElement("div", { className: "szan-popover__title" }, annotation.title),
-        React.createElement("div", { className: "szan-popover__body" }, annotation.body),
+        React.createElement("div", { className: "orbit-popover__title" }, annotation.title),
+        React.createElement("div", { className: "orbit-popover__body" }, annotation.body),
         React.createElement(
           "div",
-          { className: "szan-popover__meta" },
+          { className: "orbit-popover__meta" },
           `${annotation.author} · ${annotation.date}`
         )
       ),
@@ -89,14 +102,14 @@ export function AnnotationPopover({
     showComments &&
       React.createElement(
         "div",
-        { className: "szan-popover__section" },
+        { className: "orbit-popover__section" },
         React.createElement(
           "div",
-          { className: "szan-section-heading" },
+          { className: "orbit-section-heading" },
           React.createElement(MessageSquareTextIcon, { size: 12 }),
           "Feedback",
           comments.length > 0 &&
-            React.createElement("span", { className: "szan-count" }, comments.length)
+            React.createElement("span", { className: "orbit-count" }, comments.length)
         ),
         React.createElement(CommentThread, { comments, isLoading, error }),
         React.createElement(CommentForm, { onSubmit })

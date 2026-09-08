@@ -87,6 +87,45 @@ function availableHeight(
 }
 
 /**
+ * Fixed placement that maximises height by letting the popover overlap the target.
+ *
+ * A hugging popover (getFixedPopoverStyle) can never be taller than the gap between
+ * the element and the viewport edge, so a tall form clicked on a mid-page element
+ * scrolls. This anchors to whichever element edge leaves the most room and uses that
+ * room in full — the popover sits over the element, extending toward the far edge.
+ * Meant for the inspector, where you clicked the element to comment on it and the
+ * popover's header already names it, so covering it is fine.
+ */
+export function getOverlapPopoverStyle(
+  rect: DOMRect,
+  popoverWidth: number,
+  margin = 16
+): React.CSSProperties {
+  const viewportH = window.innerHeight;
+  const viewportW = window.innerWidth;
+
+  const style: React.CSSProperties = { position: "fixed", width: popoverWidth };
+
+  // Horizontal: align to the element's left, or its right when the left would overrun.
+  if (viewportW - rect.left >= popoverWidth) style.left = rect.left;
+  else style.right = viewportW - rect.right;
+
+  // Vertical: anchor to the element edge nearer the roomier side and take it all.
+  const elementMiddle = rect.top + rect.height / 2;
+  if (elementMiddle < viewportH / 2) {
+    const top = Math.max(margin, rect.top);
+    style.top = top;
+    style.maxHeight = viewportH - top - margin;
+  } else {
+    const bottom = Math.max(margin, viewportH - rect.bottom);
+    style.bottom = bottom;
+    style.maxHeight = viewportH - bottom - margin;
+  }
+
+  return style;
+}
+
+/**
  * Returns absolute-position CSS properties for a popover inside a relative container.
  * Used by AnnotationMarker where the popover is a child of the annotated element.
  */

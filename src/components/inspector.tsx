@@ -6,9 +6,9 @@ import { cx } from "../utils/cx";
 import { useStableId } from "../utils/use-stable-id";
 import { getElementLabel, getElementPath } from "../utils/element-id";
 import { getInspectorButtonPosition, snapToCorner } from "../utils/drag";
-import { getFixedPopoverStyle } from "../utils/popover-position";
+import { getOverlapPopoverStyle } from "../utils/popover-position";
 import { AnnotationPopover } from "./annotation-popover";
-import { CrosshairIcon, XIcon } from "../icons";
+import { CrosshairIcon } from "../icons";
 
 const DRAG_THRESHOLD = 5;
 
@@ -46,40 +46,34 @@ function InspectorPopover({
   selected: SelectedElement;
   onClose: () => void;
 }) {
-  const { commentsConfig } = useAnnotationsSafe();
-  const popoverId = useStableId("szan-inspector-popover");
+  const { commentsConfig, allAnnotations } = useAnnotationsSafe();
+  const popoverId = useStableId("orbit-inspector-popover");
+
+  // The clicked element resolved to a stable id (data-annotation-id wins). If that
+  // id belongs to an annotation, show the annotation here too — so clicking an
+  // annotated component through the inspector opens the same annotation + feedback
+  // thread the annotation pin would, not a bare feedback box on the side.
+  const annotation = allAnnotations.find((a) => a.id === selected.path);
 
   const { comments, isLoading, error, submitComment } = useComments({
     apiBase: commentsConfig?.apiBase ?? "",
     project: commentsConfig?.project ?? "",
     annotationId: selected.path,
-    label: selected.label,
+    label: annotation?.title ?? selected.label,
     enabled: !!commentsConfig,
   });
 
+  // Just the element locator; the popover renders its own close button top-right.
   const header = React.createElement(
     "div",
-    { className: "szan-popover__section" },
-    React.createElement(
-      "div",
-      { className: "szan-popover__header" },
-      React.createElement("div", { className: "szan-mono" }, selected.label),
-      React.createElement(
-        "button",
-        {
-          type: "button",
-          className: "szan-icon-button",
-          onClick: onClose,
-          "aria-label": "Sluit feedbackvenster",
-        },
-        React.createElement(XIcon, { size: 16 })
-      )
-    )
+    { className: "orbit-popover__section" },
+    React.createElement("div", { className: "orbit-mono" }, selected.label)
   );
 
   return React.createElement(AnnotationPopover, {
     id: popoverId,
     header,
+    annotation,
     showComments: true,
     comments,
     isLoading,
@@ -87,7 +81,7 @@ function InspectorPopover({
     onSubmit: submitComment,
     onClose,
     variant: "inspector",
-    style: getFixedPopoverStyle(selected.rect, 320, 420),
+    style: getOverlapPopoverStyle(selected.rect, 320),
     extraProps: { [DATA_INSPECTOR]: "" },
   });
 }
@@ -284,11 +278,11 @@ export function Inspector() {
       ref: toggleRef,
       [DATA_INSPECTOR]: "",
       className: cx(
-        "szan-root",
-        "szan-fab",
-        "szan-fab--inspector",
-        active && "szan-fab--active",
-        isDragging && "szan-fab--dragging"
+        "orbit-root",
+        "orbit-fab",
+        "orbit-fab--inspector",
+        active && "orbit-fab--active",
+        isDragging && "orbit-fab--dragging"
       ),
       style: getInspectorButtonPosition(panelCorner),
       onClick: () => {
@@ -309,7 +303,7 @@ export function Inspector() {
   // than left to the button's colour.
   const announcement = React.createElement(
     "div",
-    { key: "status", className: "szan-root szan-sr-only", role: "status" },
+    { key: "status", className: "orbit-root orbit-sr-only", role: "status" },
     active && !selected ? "Inspectormodus actief. Klik een element aan om feedback te plaatsen, Escape om te stoppen." : ""
   );
 
@@ -318,7 +312,7 @@ export function Inspector() {
       ? React.createElement("div", {
           key: "hover",
           [DATA_INSPECTOR]: "",
-          className: "szan-root szan-overlay",
+          className: "orbit-root orbit-overlay",
           style: {
             left: hoverRect.left,
             top: hoverRect.top,
@@ -332,7 +326,7 @@ export function Inspector() {
     ? React.createElement("div", {
         key: "selected",
         [DATA_INSPECTOR]: "",
-        className: "szan-root szan-overlay szan-overlay--selected",
+        className: "orbit-root orbit-overlay orbit-overlay--selected",
         style: {
           left: selected.rect.left,
           top: selected.rect.top,

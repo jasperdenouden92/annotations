@@ -1,14 +1,18 @@
 /**
- * Component rules.
+ * Component rules — Geist / Vercel idiom.
  *
- * Every selector carries the `szan-` prefix and every element we render also carries
- * `.szan-root`. That is what keeps a host application's CSS out of this module and
- * this module's CSS out of the host: `.szan-root *` outweighs a bare `button {}` or
+ * Every selector carries the `orbit-` prefix and every element we render also carries
+ * `.orbit-root`. That is what keeps a host application's CSS out of this module and
+ * this module's CSS out of the host: `.orbit-root *` outweighs a bare `button {}` or
  * `* {}` from the page around us.
  *
- * The reset block comes first on purpose. `.szan-root *` and `.szan-panel__title`
+ * The reset block comes first on purpose. `.orbit-root *` and `.orbit-panel__title`
  * have the same specificity, so source order decides, and the component rules have
  * to win.
+ *
+ * The look: near-monochrome surfaces, hairline borders, one blue reserved for the
+ * comment/feedback layer, a big soft shadow on anything that floats, and a primary
+ * button that inverts per theme (black on light, white on dark).
  */
 
 import { ANNOTATION_TYPES, STATUS_SLUGS } from "./tokens";
@@ -16,10 +20,10 @@ import { ANNOTATION_TYPES, STATUS_SLUGS } from "./tokens";
 // ── Reset and base ───────────────────────────────────────────────────────────
 
 const BASE = `
-.szan-root,
-.szan-root *,
-.szan-root *::before,
-.szan-root *::after {
+.orbit-root,
+.orbit-root *,
+.orbit-root *::before,
+.orbit-root *::after {
   /* The one !important in the sheet. A host page forcing content-box on every
      element would otherwise break every width in this module; the rest of the
      reset can lose that fight without anything breaking structurally. */
@@ -41,44 +45,44 @@ const BASE = `
   min-width: 0;
 }
 
-.szan-root {
-  font-family: var(--szan-font-body);
-  font-size: var(--szan-text-md);
+.orbit-root {
+  font-family: var(--orbit-font-body);
+  font-size: var(--orbit-text-md);
   font-weight: 400;
   font-style: normal;
-  line-height: var(--szan-leading-normal);
-  color: var(--szan-text-primary);
+  line-height: var(--orbit-leading-normal);
+  color: var(--orbit-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-.szan-root button,
-.szan-root input,
-.szan-root textarea {
+.orbit-root button,
+.orbit-root input,
+.orbit-root textarea {
   -webkit-appearance: none;
   appearance: none;
 }
 
-.szan-root button {
+.orbit-root button {
   cursor: pointer;
 }
 
-.szan-root button:disabled {
+.orbit-root button:disabled {
   cursor: not-allowed;
 }
 
-.szan-root :focus-visible,
-.szan-root:focus-visible {
-  outline: 2px solid var(--szan-outline-focus-ring);
+.orbit-root :focus-visible,
+.orbit-root:focus-visible {
+  outline: 2px solid var(--orbit-outline-focus-ring);
   outline-offset: 2px;
 }
 
 /* Keeps a wrapper out of its parent's layout entirely. */
-.szan-contents {
+.orbit-contents {
   display: contents;
 }
 
-.szan-sr-only {
+.orbit-sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -89,24 +93,25 @@ const BASE = `
   border-width: 0;
 }
 
-@keyframes szan-enter {
+@keyframes orbit-enter {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-6px) scale(0.99);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
-.szan-animate-in {
-  animation: szan-enter var(--szan-duration-slow) var(--szan-ease) both;
+.orbit-animate-in {
+  animation: orbit-enter var(--orbit-duration-slow) var(--orbit-ease) both;
+  transform-origin: top center;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .szan-root,
-  .szan-root * {
+  .orbit-root,
+  .orbit-root * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -117,31 +122,39 @@ const BASE = `
 
 // ── Type and status token bridges ────────────────────────────────────────────
 
-// A `data-szan-type` / `data-szan-status` attribute maps the palette for that
+// A `data-orbit-type` / `data-orbit-status` attribute maps the palette for that
 // variant onto three local variables, so the rules below stay variant-agnostic.
 const TYPE_BRIDGE = ANNOTATION_TYPES.map(
-  (type) => `[data-szan-type="${type}"] {
-  --szan-variant-bg: var(--szan-type-${type}-bg);
-  --szan-variant-border: var(--szan-type-${type}-border);
-  --szan-variant-fg: var(--szan-type-${type}-fg);
-  --szan-variant-ring: var(--szan-type-${type}-border);
-  --szan-variant-ring: color-mix(in oklab, var(--szan-type-${type}-fg) 16%, transparent);
+  (type) => `[data-orbit-type="${type}"] {
+  --orbit-variant-bg: var(--orbit-type-${type}-bg);
+  --orbit-variant-border: var(--orbit-type-${type}-border);
+  --orbit-variant-fg: var(--orbit-type-${type}-fg);
+  --orbit-variant-ring: var(--orbit-type-${type}-border);
+  --orbit-variant-ring: color-mix(in oklab, var(--orbit-type-${type}-fg) 16%, transparent);
 }`
 ).join("\n");
 
 const STATUS_TONE: Record<string, string> = {
-  open: "error",
-  pending: "warning",
+  open: "warning",
+  pending: "feedback",
   resolved: "success",
 };
 
+// The feedback tone has no `-primary` suffix, so its slug maps a little differently.
 const STATUS_BRIDGE = Object.values(STATUS_SLUGS)
   .map((slug) => {
     const tone = STATUS_TONE[slug];
-    return `[data-szan-status="${slug}"] {
-  --szan-variant-bg: var(--szan-bg-${tone}-primary);
-  --szan-variant-border: var(--szan-border-${tone});
-  --szan-variant-fg: var(--szan-text-${tone}-primary);
+    if (tone === "feedback") {
+      return `[data-orbit-status="${slug}"] {
+  --orbit-variant-bg: var(--orbit-bg-feedback);
+  --orbit-variant-border: var(--orbit-border-feedback);
+  --orbit-variant-fg: var(--orbit-text-feedback);
+}`;
+    }
+    return `[data-orbit-status="${slug}"] {
+  --orbit-variant-bg: var(--orbit-bg-${tone}-primary);
+  --orbit-variant-border: var(--orbit-border-${tone});
+  --orbit-variant-fg: var(--orbit-text-${tone}-primary);
 }`;
   })
   .join("\n");
@@ -149,285 +162,316 @@ const STATUS_BRIDGE = Object.values(STATUS_SLUGS)
 // ── Floating buttons ─────────────────────────────────────────────────────────
 
 const FAB = `
-.szan-fab {
+.orbit-fab {
   position: fixed;
-  z-index: calc(var(--szan-z-base) + var(--szan-z-toolbar));
+  z-index: calc(var(--orbit-z-base) + var(--orbit-z-toolbar));
   display: flex;
   align-items: center;
   justify-content: center;
   width: 40px;
   height: 40px;
-  border: 1px solid var(--szan-border-primary);
-  border-radius: var(--szan-radius-lg);
-  background: var(--szan-bg-primary);
-  color: var(--szan-text-tertiary);
-  box-shadow: var(--szan-shadow-xs);
+  border: 1px solid var(--orbit-border-primary);
+  border-radius: var(--orbit-radius-full);
+  background: var(--orbit-bg-primary);
+  color: var(--orbit-text-secondary);
+  box-shadow: var(--orbit-shadow-sm);
   transition:
-    background-color var(--szan-duration) var(--szan-ease),
-    border-color var(--szan-duration) var(--szan-ease),
-    box-shadow var(--szan-duration) var(--szan-ease),
-    transform var(--szan-duration-fast) var(--szan-ease);
+    background-color var(--orbit-duration) var(--orbit-ease),
+    border-color var(--orbit-duration) var(--orbit-ease),
+    color var(--orbit-duration) var(--orbit-ease),
+    box-shadow var(--orbit-duration) var(--orbit-ease),
+    transform var(--orbit-duration-fast) var(--orbit-ease);
 }
 
-.szan-fab:hover {
-  background: var(--szan-bg-primary_hover);
-  box-shadow: var(--szan-shadow-sm);
+.orbit-fab:hover {
+  border-color: var(--orbit-border-input);
+  color: var(--orbit-text-primary);
+  box-shadow: var(--orbit-shadow-md);
 }
 
-.szan-fab:active {
-  transform: scale(0.96);
+.orbit-fab:active {
+  transform: scale(0.94);
 }
 
-.szan-fab--active {
-  background: var(--szan-bg-feedback-solid);
-  border-color: var(--szan-bg-feedback-solid);
-  color: var(--szan-text-feedback_on-solid);
+/* The comment/inspector mode changes how the whole page behaves, so its active
+   state is the loud one: the feedback blue, filled. */
+.orbit-fab--active {
+  background: var(--orbit-bg-feedback-solid);
+  border-color: var(--orbit-bg-feedback-solid);
+  color: var(--orbit-text-feedback_on-solid);
 }
 
-.szan-fab--active:hover {
-  background: var(--szan-bg-feedback-solid);
-  border-color: var(--szan-bg-feedback-solid);
+.orbit-fab--active:hover {
+  background: var(--orbit-bg-feedback-solid);
+  border-color: var(--orbit-bg-feedback-solid);
+  color: var(--orbit-text-feedback_on-solid);
 }
 
-.szan-fab--inspector {
-  z-index: calc(var(--szan-z-base) + var(--szan-z-inspector-toggle));
+.orbit-fab--inspector {
+  z-index: calc(var(--orbit-z-base) + var(--orbit-z-inspector-toggle));
 }
 
-.szan-fab--dragging {
+.orbit-fab--dragging {
   cursor: grabbing;
   transition: none;
 }
 
-.szan-fab__count {
+.orbit-fab__count {
   position: absolute;
-  top: -6px;
-  right: -6px;
+  top: -7px;
+  right: -7px;
   display: flex;
   align-items: center;
   justify-content: center;
   min-width: 18px;
   height: 18px;
-  padding: 0 var(--szan-space-1);
-  border: 2px solid var(--szan-bg-primary);
-  border-radius: var(--szan-radius-full);
-  background: var(--szan-text-error-primary);
-  color: var(--szan-bg-primary);
-  font-size: var(--szan-text-2xs);
+  padding: 0 5px;
+  border: 2px solid var(--orbit-bg-primary);
+  border-radius: var(--orbit-radius-full);
+  background: var(--orbit-bg-feedback-solid);
+  color: var(--orbit-text-feedback_on-solid);
+  font-size: var(--orbit-text-2xs);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  line-height: var(--szan-leading-none);
+  line-height: var(--orbit-leading-none);
 }
 `;
 
-// ── Marker badges ────────────────────────────────────────────────────────────
+// ── Marker badges (pins) ──────────────────────────────────────────────────────
 
 const MARKER = `
-.szan-marker {
+.orbit-marker {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1.5px solid var(--szan-variant-border, var(--szan-border-primary));
-  border-radius: var(--szan-radius-full);
-  background: var(--szan-variant-bg, var(--szan-bg-tertiary));
-  color: var(--szan-variant-fg, var(--szan-text-tertiary));
-  box-shadow: var(--szan-shadow-sm);
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--orbit-variant-border, var(--orbit-border-primary));
+  border-radius: var(--orbit-radius-full);
+  background: var(--orbit-bg-primary);
+  color: var(--orbit-variant-fg, var(--orbit-text-secondary));
+  box-shadow: var(--orbit-shadow-sm);
   transition:
-    transform var(--szan-duration) var(--szan-ease),
-    box-shadow var(--szan-duration) var(--szan-ease);
+    transform var(--orbit-duration) var(--orbit-ease),
+    box-shadow var(--orbit-duration) var(--orbit-ease);
 }
 
-/* Extends the hit area to 40px without growing the visible badge, which would
+/* Extends the hit area to ~38px without growing the visible pin, which would
    cover the very element being annotated. */
-.szan-marker::before {
+.orbit-marker::before {
   content: "";
   position: absolute;
   inset: -6px;
   border-radius: inherit;
 }
 
-.szan-marker:hover {
-  transform: scale(1.1);
+.orbit-marker:hover {
+  transform: scale(1.12);
+  box-shadow: var(--orbit-shadow-md);
 }
 
-.szan-marker:active {
+.orbit-marker:active {
   transform: scale(0.96);
 }
 
-.szan-marker--active {
+.orbit-marker--active {
   box-shadow:
-    0 0 0 4px var(--szan-variant-ring, var(--szan-overlay-ring)),
-    var(--szan-shadow-sm);
+    0 0 0 4px var(--orbit-variant-ring, var(--orbit-overlay-ring)),
+    var(--orbit-shadow-sm);
 }
 
-/* The comment count next to an annotation badge is a mirror of what the panel
-   already lists; it is decorative, so it takes no hit area and no pointer. */
-.szan-marker--static {
+/* Mirrors of what the panel already lists take no hit area and no pointer. */
+.orbit-marker--static {
   pointer-events: none;
 }
 
-.szan-marker--static::before {
+.orbit-marker--static::before {
   content: none;
 }
 
-.szan-marker--feedback {
-  --szan-variant-bg: var(--szan-bg-feedback);
-  --szan-variant-border: var(--szan-border-feedback);
-  --szan-variant-fg: var(--szan-text-feedback);
-  --szan-variant-ring: var(--szan-border-feedback);
-  --szan-variant-ring: color-mix(in oklab, var(--szan-text-feedback) 16%, transparent);
+/* Feedback pins are the Vercel comment pin: solid blue, white glyph. */
+.orbit-marker--feedback {
+  border-color: var(--orbit-bg-feedback-solid);
+  background: var(--orbit-bg-feedback-solid);
+  color: var(--orbit-text-feedback_on-solid);
 }
 
-.szan-marker--resolved {
-  --szan-variant-bg: var(--szan-bg-tertiary);
-  --szan-variant-border: var(--szan-border-primary);
-  --szan-variant-fg: var(--szan-text-quaternary);
+.orbit-marker--feedback.orbit-marker--active {
+  box-shadow:
+    0 0 0 4px var(--orbit-overlay-ring),
+    var(--orbit-shadow-sm);
 }
 
-.szan-marker__count {
-  font-size: var(--szan-text-2xs);
+.orbit-marker--resolved {
+  border-color: var(--orbit-border-primary);
+  background: var(--orbit-bg-tertiary);
+  color: var(--orbit-text-quaternary);
+}
+
+.orbit-marker__count {
+  font-size: var(--orbit-text-2xs);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  line-height: var(--szan-leading-none);
+  line-height: var(--orbit-leading-none);
 }
 
-.szan-marker--fixed {
+.orbit-marker--fixed {
   position: fixed;
-  z-index: calc(var(--szan-z-base) + var(--szan-z-badge));
+  z-index: calc(var(--orbit-z-base) + var(--orbit-z-badge));
 }
 
-.szan-marker--absolute {
+.orbit-marker--absolute {
   position: absolute;
-  z-index: calc(var(--szan-z-base) + var(--szan-z-badge));
+  z-index: calc(var(--orbit-z-base) + var(--orbit-z-badge));
 }
 
-.szan-marker--behind {
-  z-index: calc(var(--szan-z-base) + var(--szan-z-badge-feedback));
+.orbit-marker--behind {
+  z-index: calc(var(--orbit-z-base) + var(--orbit-z-badge-feedback));
 }
 
-/* A dashed edge says this badge points at nothing in particular — the annotation
-   is page-level, or its element is not rendered right now. */
-.szan-marker--unplaced {
+/* A dashed edge says this pin points at nothing in particular — the annotation is
+   page-level, or its element is not rendered right now. */
+.orbit-marker--unplaced {
   border-style: dashed;
 }
 
-/* Ring drawn around a wrapped element while its marker is hovered or open. */
-.szan-marker-wrap {
+/* Ring drawn around a wrapped element while its pin is hovered or open. */
+.orbit-marker-wrap {
   position: relative;
   flex: 1;
   min-width: 0;
-  border-radius: var(--szan-radius-md);
-  outline: 2px solid transparent;
+  border-radius: var(--orbit-radius-lg);
+  outline: 1.5px solid transparent;
   outline-offset: 2px;
   transition:
-    outline-color var(--szan-duration) var(--szan-ease),
-    box-shadow var(--szan-duration) var(--szan-ease);
+    outline-color var(--orbit-duration) var(--orbit-ease),
+    box-shadow var(--orbit-duration) var(--orbit-ease);
 }
 
-.szan-marker-wrap--lit {
-  outline-color: var(--szan-variant-fg, var(--szan-text-feedback));
+.orbit-marker-wrap--lit {
+  outline-color: var(--orbit-variant-fg, var(--orbit-text-feedback));
 }
 
-.szan-marker-wrap--active {
-  box-shadow: 0 0 0 4px var(--szan-variant-ring, var(--szan-overlay-ring));
+.orbit-marker-wrap--active {
+  box-shadow: 0 0 0 4px var(--orbit-variant-ring, var(--orbit-overlay-ring));
 }
 `;
 
 // ── Popover ──────────────────────────────────────────────────────────────────
 
 const POPOVER = `
-.szan-popover {
-  z-index: calc(var(--szan-z-base) + var(--szan-z-popover));
+.orbit-popover {
+  position: relative;
+  z-index: calc(var(--orbit-z-base) + var(--orbit-z-popover));
   min-width: 300px;
-  max-width: 380px;
+  max-width: 360px;
   /* The inline maxHeight from popover-position.ts is the real cap; this only
      stops a popover from running past the viewport when there is no anchor. */
-  max-height: calc(100vh - var(--szan-space-8));
+  max-height: calc(100vh - var(--orbit-space-8));
   overflow-y: auto;
-  border: 1px solid var(--szan-border-secondary);
-  border-radius: var(--szan-radius-xl);
-  background: var(--szan-bg-primary);
-  box-shadow: var(--szan-shadow-lg);
+  border: 1px solid var(--orbit-border-primary);
+  border-radius: var(--orbit-radius-2xl);
+  background: var(--orbit-bg-primary);
+  box-shadow: var(--orbit-shadow-lg);
 }
 
-.szan-popover--inspector {
-  z-index: calc(var(--szan-z-base) + var(--szan-z-inspector-popover));
-  min-width: 0;
-  max-width: none;
+.orbit-popover--inspector {
+  z-index: calc(var(--orbit-z-base) + var(--orbit-z-inspector-popover));
+  min-width: 320px;
+  max-width: 360px;
 }
 
-.szan-popover__section {
-  padding: var(--szan-space-4);
+/* Pinned to the popover's top-right corner. The compound selector outweighs the
+   .orbit-icon-button base (which sets position: relative and is declared later), so
+   the absolute positioning wins. A solid background keeps it legible over content. */
+.orbit-popover .orbit-popover__close {
+  position: absolute;
+  /* Level with the first content row (the type badge / label at the section's
+     16px top padding), tight into the corner. */
+  top: var(--orbit-space-3);
+  right: var(--orbit-space-2);
+  z-index: 2;
+  background: var(--orbit-bg-primary);
 }
 
-.szan-popover__section + .szan-popover__section {
-  border-top: 1px solid var(--szan-border-secondary);
+.orbit-popover__section {
+  padding: var(--orbit-space-4);
 }
 
-.szan-popover__section > .szan-type-badge {
-  margin-bottom: var(--szan-space-1-5);
+.orbit-popover__section + .orbit-popover__section {
+  border-top: 1px solid var(--orbit-border-secondary);
 }
 
-.szan-popover__header {
+.orbit-popover__section > .orbit-type-badge {
+  margin-bottom: var(--orbit-space-2);
+}
+
+/* The Vercel breadcrumb bar: a thin strip carrying the element reference and the
+   close button, its own quiet background. */
+.orbit-popover__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--szan-space-2);
-  margin-bottom: var(--szan-space-2);
+  gap: var(--orbit-space-2);
 }
 
-.szan-popover__title {
-  margin-bottom: var(--szan-space-1);
-  font-size: var(--szan-text-md);
+.orbit-popover__title {
+  margin-bottom: var(--orbit-space-1);
+  font-size: var(--orbit-text-md);
   font-weight: 600;
-  color: var(--szan-text-primary);
+  color: var(--orbit-text-primary);
   text-wrap: balance;
 }
 
-.szan-popover__body {
-  font-size: var(--szan-text-md);
-  line-height: var(--szan-leading-normal);
-  color: var(--szan-text-secondary);
+.orbit-popover__body {
+  font-size: var(--orbit-text-md);
+  line-height: var(--orbit-leading-normal);
+  color: var(--orbit-text-secondary);
   white-space: pre-wrap;
   text-wrap: pretty;
 }
 
-.szan-popover__meta {
-  margin-top: var(--szan-space-2);
-  font-size: var(--szan-text-xs);
-  color: var(--szan-text-quaternary);
+.orbit-popover__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--orbit-space-1-5);
+  margin-top: var(--orbit-space-3);
+  font-size: var(--orbit-text-xs);
+  color: var(--orbit-text-quaternary);
 }
 
-.szan-mono {
-  flex: 1;
+.orbit-mono {
   overflow: hidden;
-  font-family: var(--szan-font-mono);
-  font-size: var(--szan-text-sm);
-  color: var(--szan-text-quaternary);
+  /* Clears the close button pinned in the top-right corner. */
+  padding-right: var(--orbit-space-8);
+  font-family: var(--orbit-font-mono);
+  font-size: var(--orbit-text-sm);
+  color: var(--orbit-text-tertiary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.szan-section-heading {
+.orbit-section-heading {
   display: flex;
   align-items: center;
-  gap: var(--szan-space-1-5);
-  margin-bottom: var(--szan-space-2);
-  font-size: var(--szan-text-xs);
+  gap: var(--orbit-space-1-5);
+  margin-bottom: var(--orbit-space-3);
+  font-size: var(--orbit-text-xs);
   font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--szan-text-quaternary);
+  color: var(--orbit-text-tertiary);
 }
 
-.szan-count {
-  padding: 0 var(--szan-space-1-5);
-  border: 1px solid var(--szan-border-secondary);
-  border-radius: var(--szan-radius-full);
-  background: var(--szan-bg-tertiary);
-  color: var(--szan-text-secondary);
-  font-size: var(--szan-text-2xs);
+.orbit-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--orbit-space-1-5);
+  border-radius: var(--orbit-radius-full);
+  background: var(--orbit-bg-tertiary);
+  color: var(--orbit-text-tertiary);
+  font-size: var(--orbit-text-2xs);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: normal;
@@ -437,92 +481,121 @@ const POPOVER = `
 // ── Badges and pills ─────────────────────────────────────────────────────────
 
 const BADGES = `
-.szan-type-badge {
+.orbit-type-badge {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  gap: var(--szan-space-1);
-  padding: var(--szan-space-0-5) var(--szan-space-1-5);
-  border: 1px solid var(--szan-variant-border);
-  border-radius: var(--szan-radius-md);
-  background: var(--szan-variant-bg);
-  color: var(--szan-variant-fg);
-  font-size: var(--szan-text-2xs);
+  gap: var(--orbit-space-1);
+  height: 20px;
+  padding: 0 var(--orbit-space-1-5);
+  border: 1px solid var(--orbit-variant-border);
+  border-radius: var(--orbit-radius-sm);
+  background: var(--orbit-variant-bg);
+  color: var(--orbit-variant-fg);
+  font-size: var(--orbit-text-2xs);
   font-weight: 500;
-  line-height: var(--szan-leading-none);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  line-height: var(--orbit-leading-none);
+  letter-spacing: 0.3px;
+  text-transform: capitalize;
 }
 
-.szan-status {
+/* A status is a dot plus a word — the colour never carries the meaning alone. */
+.orbit-status {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  padding: var(--szan-space-0-5) var(--szan-space-2);
-  border: 1px solid var(--szan-variant-border);
-  border-radius: var(--szan-radius-full);
-  background: var(--szan-variant-bg);
-  color: var(--szan-variant-fg);
-  font-size: var(--szan-text-xs);
+  gap: var(--orbit-space-1-5);
+  height: 20px;
+  padding: 0 var(--orbit-space-2);
+  border: 1px solid var(--orbit-variant-border);
+  border-radius: var(--orbit-radius-full);
+  background: var(--orbit-variant-bg);
+  color: var(--orbit-variant-fg);
+  font-size: var(--orbit-text-xs);
   font-weight: 500;
+}
+
+.orbit-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: var(--orbit-radius-full);
+  background: currentColor;
+}
+
+/* Small round monogram standing in for a user, in a thread and the composer. */
+.orbit-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--orbit-radius-full);
+  background: var(--orbit-bg-tertiary);
+  color: var(--orbit-text-secondary);
+  font-size: var(--orbit-text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
 }
 `;
 
 // ── Panel ────────────────────────────────────────────────────────────────────
 
 const PANEL = `
-.szan-panel {
-  z-index: calc(var(--szan-z-base) + var(--szan-z-toolbar));
+.orbit-panel {
+  z-index: calc(var(--orbit-z-base) + var(--orbit-z-toolbar));
   /* settings.panelWidth is applied inline; these caps keep it inside a 320px
      viewport instead of forcing the host page to scroll sideways. */
-  max-width: calc(100vw - var(--szan-space-8));
-  max-height: calc(100vh - var(--szan-space-8));
+  max-width: calc(100vw - var(--orbit-space-8));
+  max-height: calc(100vh - var(--orbit-space-8));
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--szan-border-secondary);
-  border-radius: var(--szan-radius-xl);
-  background: var(--szan-bg-primary);
-  box-shadow: var(--szan-shadow-xl);
+  border: 1px solid var(--orbit-border-primary);
+  border-radius: var(--orbit-radius-2xl);
+  background: var(--orbit-bg-primary);
+  box-shadow: var(--orbit-shadow-xl);
   transition:
-    top var(--szan-duration-slow) var(--szan-ease),
-    left var(--szan-duration-slow) var(--szan-ease),
-    right var(--szan-duration-slow) var(--szan-ease),
-    bottom var(--szan-duration-slow) var(--szan-ease);
+    top var(--orbit-duration-slow) var(--orbit-ease),
+    left var(--orbit-duration-slow) var(--orbit-ease),
+    right var(--orbit-duration-slow) var(--orbit-ease),
+    bottom var(--orbit-duration-slow) var(--orbit-ease);
 }
 
-.szan-panel--dragging {
+.orbit-panel--dragging {
   cursor: grabbing;
   transition: none;
 }
 
 /* Grip, tabs and close share one row. align-items: stretch lets the tabs run the
    full height so their underline lands on the header rule. */
-.szan-panel__header {
+.orbit-panel__header {
   display: flex;
   align-items: stretch;
-  gap: var(--szan-space-1);
-  padding: 0 var(--szan-space-2) 0 var(--szan-space-3);
-  border-bottom: 1px solid var(--szan-border-secondary);
+  gap: var(--orbit-space-1);
+  padding: 0 var(--orbit-space-2) 0 var(--orbit-space-3);
+  border-bottom: 1px solid var(--orbit-border-secondary);
 }
 
-.szan-panel__grip {
+.orbit-panel__grip {
   display: flex;
   align-items: center;
   flex-shrink: 0;
   cursor: grab;
-  color: var(--szan-text-quaternary);
+  color: var(--orbit-text-disabled);
 }
 
-.szan-panel__grip:active {
+.orbit-panel__grip:active {
   cursor: grabbing;
 }
 
-.szan-panel__header .szan-icon-button {
+.orbit-panel__header .orbit-icon-button {
   align-self: center;
 }
 
-.szan-icon-button {
+.orbit-icon-button {
   position: relative;
   display: flex;
   align-items: center;
@@ -530,303 +603,302 @@ const PANEL = `
   flex-shrink: 0;
   width: 28px;
   height: 28px;
-  border-radius: var(--szan-radius-md);
-  color: var(--szan-text-quaternary);
+  border-radius: var(--orbit-radius-md);
+  color: var(--orbit-text-tertiary);
   transition:
-    background-color var(--szan-duration-fast) var(--szan-ease),
-    color var(--szan-duration-fast) var(--szan-ease),
-    transform var(--szan-duration-fast) var(--szan-ease);
+    background-color var(--orbit-duration-fast) var(--orbit-ease),
+    color var(--orbit-duration-fast) var(--orbit-ease),
+    transform var(--orbit-duration-fast) var(--orbit-ease);
 }
 
 /* 28px is the visible box; the pseudo-element brings the hit area to 40px. */
-.szan-icon-button::before {
+.orbit-icon-button::before {
   content: "";
   position: absolute;
   inset: -6px;
 }
 
-.szan-icon-button:hover {
-  background: var(--szan-bg-tertiary);
-  color: var(--szan-text-secondary);
+.orbit-icon-button:hover {
+  background: var(--orbit-bg-tertiary);
+  color: var(--orbit-text-primary);
 }
 
-.szan-icon-button:active {
-  transform: scale(0.96);
+.orbit-icon-button:active {
+  transform: scale(0.94);
 }
 
-.szan-tabs {
+.orbit-tabs {
   display: flex;
   flex: 1;
+  gap: var(--orbit-space-3);
   /* Pulls the active tab's underline down onto the header's own rule. */
   margin-bottom: -1px;
 }
 
-.szan-tab {
+.orbit-tab {
   display: flex;
   align-items: center;
-  gap: var(--szan-space-1-5);
-  padding: var(--szan-space-3);
+  gap: var(--orbit-space-1-5);
+  padding: var(--orbit-space-3) 0;
   border-bottom: 2px solid transparent;
-  color: var(--szan-text-quaternary);
-  font-size: var(--szan-text-md);
+  color: var(--orbit-text-tertiary);
+  font-size: var(--orbit-text-md);
   transition:
-    color var(--szan-duration) var(--szan-ease),
-    border-color var(--szan-duration) var(--szan-ease);
+    color var(--orbit-duration) var(--orbit-ease),
+    border-color var(--orbit-duration) var(--orbit-ease);
 }
 
-.szan-tab:hover {
-  color: var(--szan-text-secondary);
+.orbit-tab:hover {
+  color: var(--orbit-text-primary);
 }
 
-.szan-tab--active {
-  border-bottom-color: var(--szan-border-brand);
-  color: var(--szan-text-primary);
+.orbit-tab--active {
+  border-bottom-color: var(--orbit-text-primary);
+  color: var(--orbit-text-primary);
   font-weight: 600;
 }
 
 /* The counter says how much is waiting in the tab you are not looking at. Once
    you are in it, the list below answers that. */
-.szan-tab--active .szan-count {
+.orbit-tab--active .orbit-count {
   display: none;
 }
 
-.szan-subtabs {
+.orbit-subtabs {
   display: flex;
-  gap: var(--szan-space-1-5);
-  padding: var(--szan-space-2-5) var(--szan-space-4) 0;
+  gap: var(--orbit-space-1);
+  padding: var(--orbit-space-3) var(--orbit-space-4) var(--orbit-space-1);
 }
 
-.szan-subtab {
+.orbit-subtab {
   display: flex;
   align-items: center;
-  gap: var(--szan-space-1-5);
-  padding: var(--szan-space-1-5) var(--szan-space-3);
-  border-radius: var(--szan-radius-lg);
-  color: var(--szan-text-tertiary);
-  font-size: var(--szan-text-md);
+  gap: var(--orbit-space-1-5);
+  padding: var(--orbit-space-1) var(--orbit-space-2-5);
+  border-radius: var(--orbit-radius-md);
+  color: var(--orbit-text-tertiary);
+  font-size: var(--orbit-text-sm);
   font-weight: 500;
   transition:
-    background-color var(--szan-duration-fast) var(--szan-ease),
-    color var(--szan-duration-fast) var(--szan-ease);
+    background-color var(--orbit-duration-fast) var(--orbit-ease),
+    color var(--orbit-duration-fast) var(--orbit-ease);
 }
 
-.szan-subtab:hover {
-  background: var(--szan-bg-primary_hover);
+.orbit-subtab:hover {
+  background: var(--orbit-bg-tertiary);
+  color: var(--orbit-text-primary);
 }
 
-.szan-subtab--active {
-  background: var(--szan-bg-tertiary);
-  color: var(--szan-text-primary);
+.orbit-subtab--active {
+  background: var(--orbit-bg-tertiary);
+  color: var(--orbit-text-primary);
 }
 
-.szan-subtab__count {
-  min-width: 18px;
-  padding: 0 var(--szan-space-1-5);
-  border: 1px solid transparent;
-  border-radius: var(--szan-radius-full);
-  color: var(--szan-text-quaternary);
-  font-size: var(--szan-text-2xs);
+.orbit-subtab__count {
+  min-width: 16px;
+  color: var(--orbit-text-quaternary);
+  font-size: var(--orbit-text-2xs);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
 
-.szan-subtab--active .szan-subtab__count {
-  border-color: var(--szan-border-secondary);
-  background: var(--szan-bg-primary);
-  color: var(--szan-text-secondary);
+.orbit-subtab--active .orbit-subtab__count {
+  color: var(--orbit-text-secondary);
 }
 
-.szan-search {
+.orbit-search {
   position: relative;
-  padding: var(--szan-space-2-5) var(--szan-space-4);
+  /* Symmetric top/bottom padding so the icon's 50% is the input's true centre. */
+  padding: var(--orbit-space-2) var(--orbit-space-4);
 }
 
-.szan-search__icon {
+.orbit-search__icon {
   position: absolute;
   top: 50%;
-  left: var(--szan-space-6);
+  left: calc(var(--orbit-space-4) + var(--orbit-space-2-5));
   display: flex;
   transform: translateY(-50%);
-  color: var(--szan-text-quaternary);
+  color: var(--orbit-text-quaternary);
   pointer-events: none;
 }
 
-.szan-search .szan-input {
-  padding-left: var(--szan-space-8);
+.orbit-search .orbit-input {
+  min-height: 36px;
+  padding-left: var(--orbit-space-8);
 }
 
-.szan-filters {
+.orbit-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--szan-space-1-5);
-  padding: 0 var(--szan-space-4) var(--szan-space-2);
+  gap: var(--orbit-space-1-5);
+  padding: var(--orbit-space-2) var(--orbit-space-4);
 }
 
-.szan-filter {
+.orbit-filter {
   display: flex;
   align-items: center;
-  gap: var(--szan-space-1);
-  padding: var(--szan-space-1) var(--szan-space-2-5);
-  border: 1px solid var(--szan-border-secondary);
-  border-radius: var(--szan-radius-full);
-  color: var(--szan-text-tertiary);
-  font-size: var(--szan-text-xs);
+  gap: var(--orbit-space-1);
+  height: 26px;
+  padding: 0 var(--orbit-space-2-5);
+  border: 1px solid var(--orbit-border-primary);
+  border-radius: var(--orbit-radius-full);
+  color: var(--orbit-text-tertiary);
+  font-size: var(--orbit-text-xs);
   font-weight: 500;
   transition:
-    background-color var(--szan-duration-fast) var(--szan-ease),
-    border-color var(--szan-duration-fast) var(--szan-ease),
-    color var(--szan-duration-fast) var(--szan-ease);
+    background-color var(--orbit-duration-fast) var(--orbit-ease),
+    border-color var(--orbit-duration-fast) var(--orbit-ease),
+    color var(--orbit-duration-fast) var(--orbit-ease);
 }
 
-.szan-filter:hover {
-  border-color: var(--szan-border-primary);
-  color: var(--szan-text-secondary);
+.orbit-filter:hover {
+  border-color: var(--orbit-border-input);
+  color: var(--orbit-text-primary);
 }
 
-.szan-filter--active {
-  border-color: var(--szan-variant-border);
-  background: var(--szan-variant-bg);
-  color: var(--szan-variant-fg);
+.orbit-filter--active {
+  border-color: var(--orbit-variant-border);
+  background: var(--orbit-variant-bg);
+  color: var(--orbit-variant-fg);
 }
 
-.szan-filter--active:hover {
-  border-color: var(--szan-variant-fg);
-  color: var(--szan-variant-fg);
+.orbit-filter--active:hover {
+  border-color: var(--orbit-variant-fg);
+  color: var(--orbit-variant-fg);
 }
 
-.szan-list {
+.orbit-list {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--szan-space-1);
+  gap: var(--orbit-space-0-5);
   overflow-y: auto;
-  padding: var(--szan-space-1-5) var(--szan-space-2) var(--szan-space-2);
+  padding: var(--orbit-space-1) var(--orbit-space-2) var(--orbit-space-2);
 }
 
-.szan-list--comments {
-  gap: var(--szan-space-2);
+.orbit-list--comments {
+  gap: var(--orbit-space-2);
+  padding: var(--orbit-space-2) var(--orbit-space-3) var(--orbit-space-3);
 }
 
-.szan-empty {
-  padding: var(--szan-space-6) 0;
-  color: var(--szan-text-quaternary);
-  font-size: var(--szan-text-xs);
+.orbit-empty {
+  padding: var(--orbit-space-8) var(--orbit-space-4);
+  color: var(--orbit-text-quaternary);
+  font-size: var(--orbit-text-sm);
   text-align: center;
 }
 
-.szan-empty--error {
-  color: var(--szan-text-error-primary);
+.orbit-empty--error {
+  color: var(--orbit-text-error-primary);
 }
 `;
 
 // ── Annotation card ──────────────────────────────────────────────────────────
 
 const CARD = `
-.szan-card {
+.orbit-card {
   position: relative;
-  padding: var(--szan-space-3);
-  border-left: 3px solid transparent;
-  border-radius: var(--szan-radius-sm);
-  transition: background-color var(--szan-duration-fast) var(--szan-ease);
+  padding: var(--orbit-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--orbit-radius-lg);
+  transition:
+    background-color var(--orbit-duration-fast) var(--orbit-ease),
+    border-color var(--orbit-duration-fast) var(--orbit-ease);
 }
 
-/* Same reason as .szan-comment__target: the card opens an annotation and the
+/* Same reason as .orbit-comment__target: the card opens an annotation and the
    breadcrumb inside it opens a route, and a button cannot contain a button. */
-.szan-card__target {
+.orbit-card__target {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   border-radius: inherit;
-}
-
-.szan-card__target:focus-visible {
-  outline-offset: -3px;
-}
-
-.szan-card__target {
   cursor: pointer;
 }
 
-.szan-card:hover,
-.szan-card--hovered {
-  background: var(--szan-bg-primary_hover);
+.orbit-card__target:focus-visible {
+  outline-offset: -3px;
 }
 
-.szan-card--active {
-  border-left-color: var(--szan-border-brand);
-  background: var(--szan-bg-tertiary);
+.orbit-card:hover,
+.orbit-card--hovered {
+  background: var(--orbit-bg-secondary);
 }
 
-.szan-card__head {
+.orbit-card--active {
+  border-color: var(--orbit-border-primary);
+  background: var(--orbit-bg-secondary);
+}
+
+.orbit-card__head {
   display: flex;
   align-items: center;
-  gap: var(--szan-space-2);
-  margin-bottom: var(--szan-space-1);
+  gap: var(--orbit-space-2);
+  margin-bottom: var(--orbit-space-1-5);
 }
 
-.szan-card__title {
+.orbit-card__title {
   flex: 1;
   overflow: hidden;
-  font-size: var(--szan-text-md);
+  font-size: var(--orbit-text-md);
   font-weight: 600;
-  color: var(--szan-text-primary);
+  color: var(--orbit-text-primary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.szan-card__pin {
+.orbit-card__pin {
   display: flex;
   flex-shrink: 0;
-  color: var(--szan-text-quaternary);
+  color: var(--orbit-text-quaternary);
 }
 
-.szan-card__body {
+.orbit-card__body {
   display: -webkit-box;
-  margin-bottom: var(--szan-space-1-5);
+  margin-bottom: var(--orbit-space-2);
   overflow: hidden;
-  font-size: var(--szan-text-sm);
-  line-height: var(--szan-leading-normal);
-  color: var(--szan-text-secondary);
+  font-size: var(--orbit-text-sm);
+  line-height: var(--orbit-leading-normal);
+  color: var(--orbit-text-tertiary);
   text-wrap: pretty;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
-.szan-card__foot {
+.orbit-card__foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--szan-space-2);
-  font-size: var(--szan-text-xs);
-  color: var(--szan-text-quaternary);
+  gap: var(--orbit-space-2);
+  font-size: var(--orbit-text-xs);
+  color: var(--orbit-text-quaternary);
 }
 
-.szan-meta {
+.orbit-meta {
   flex-shrink: 0;
 }
 
 /* Sits above the stretched card button, so it stays clickable in its own right. */
-.szan-link {
+.orbit-link {
   position: relative;
   z-index: 1;
   max-width: 60%;
   overflow: hidden;
-  border-bottom: 1px dashed currentColor;
-  color: var(--szan-text-tertiary);
+  color: var(--orbit-text-tertiary);
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition: color var(--szan-duration-fast) var(--szan-ease);
+  transition: color var(--orbit-duration-fast) var(--orbit-ease);
 }
 
-.szan-link:hover {
-  color: var(--szan-text-primary);
+.orbit-link:hover {
+  color: var(--orbit-text-primary);
 }
 
 /* 12px text would leave a 15px-tall target; WCAG 2.2 asks for 24. Padding would
    push the footer around, so the hit area grows on a pseudo-element instead. */
-.szan-link::before {
+.orbit-link::before {
   content: "";
   position: absolute;
   inset: -5px -2px;
@@ -836,281 +908,308 @@ const CARD = `
 // ── Comments ─────────────────────────────────────────────────────────────────
 
 const COMMENTS = `
-.szan-thread {
+.orbit-thread {
   display: flex;
   flex-direction: column;
-  gap: var(--szan-space-2);
+  gap: var(--orbit-space-4);
 }
 
-.szan-comment {
+/* A comment in a thread: avatar in its own column, everything else to the right. */
+.orbit-comment {
   position: relative;
-  padding: var(--szan-space-3);
-  border: 1px solid var(--szan-border-secondary);
-  border-radius: var(--szan-radius-sm);
-  background: var(--szan-bg-primary);
-  font-size: var(--szan-text-md);
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: var(--orbit-space-2-5);
   text-align: start;
-  transition: border-color var(--szan-duration) var(--szan-ease);
 }
 
-.szan-comment--clickable:hover {
-  border-color: var(--szan-text-feedback);
+/* In the panel list a comment is an entry rather than the comment itself: it keeps
+   the same avatar grid but gains a card shell, and clicking it opens the thread on
+   the page. */
+.orbit-comment--clickable {
+  padding: var(--orbit-space-3);
+  border: 1px solid var(--orbit-border-secondary);
+  border-radius: var(--orbit-radius-lg);
+  background: var(--orbit-bg-primary);
+  transition:
+    border-color var(--orbit-duration) var(--orbit-ease),
+    background-color var(--orbit-duration) var(--orbit-ease);
 }
 
-/* Which card is open has to read without the mouse resting on it. */
-.szan-comment--expanded {
-  border-color: var(--szan-text-feedback);
-  background: var(--szan-bg-secondary);
+.orbit-comment--clickable:hover {
+  border-color: var(--orbit-border-input);
+  background: var(--orbit-bg-secondary);
+}
+
+.orbit-comment--active {
+  border-color: var(--orbit-text-feedback);
+  background: var(--orbit-bg-secondary);
 }
 
 /* A card with two actions — jump to the element, and open the page it is on —
    cannot nest one button inside another. The primary action is an overlay button
    the size of the card; the page link sits above it. */
-.szan-comment__target {
+.orbit-comment__target {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   border-radius: inherit;
+  cursor: pointer;
 }
 
-.szan-comment__target:focus-visible {
+.orbit-comment__target:focus-visible {
   outline-offset: -3px;
 }
 
-
-.szan-comment__label {
-  margin-bottom: var(--szan-space-1);
+.orbit-comment__label {
+  grid-column: 1 / -1;
+  margin-bottom: var(--orbit-space-1);
   overflow: hidden;
-  font-family: var(--szan-font-mono);
-  font-size: var(--szan-text-xs);
-  color: var(--szan-text-quaternary);
+  font-family: var(--orbit-font-mono);
+  font-size: var(--orbit-text-xs);
+  color: var(--orbit-text-quaternary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.szan-comment__head {
+.orbit-comment__body {
+  min-width: 0;
+}
+
+.orbit-comment__head {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--szan-space-2);
-  margin-bottom: var(--szan-space-1);
+  align-items: baseline;
+  gap: var(--orbit-space-2);
+  margin-bottom: var(--orbit-space-1);
 }
 
-.szan-comment__author {
-  font-size: var(--szan-text-md);
+.orbit-comment__author {
+  font-size: var(--orbit-text-sm);
   font-weight: 600;
-  color: var(--szan-text-primary);
+  color: var(--orbit-text-primary);
 }
 
-.szan-comment__text {
-  line-height: var(--szan-leading-snug);
-  color: var(--szan-text-secondary);
+.orbit-comment__time-rel {
+  flex-shrink: 0;
+  font-size: var(--orbit-text-xs);
+  color: var(--orbit-text-quaternary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Status sits at the right end of the header row. */
+.orbit-comment__head .orbit-status {
+  margin-left: auto;
+}
+
+.orbit-comment__text {
+  font-size: var(--orbit-text-sm);
+  line-height: var(--orbit-leading-normal);
+  color: var(--orbit-text-secondary);
   white-space: pre-wrap;
   text-wrap: pretty;
 }
 
-/* A comment in the panel list is an entry, not the comment itself — clicking it
-   opens the thread on the page, the same as an annotation card. So it stays
-   clamped whether or not it is the selected one. */
-.szan-comment--clickable .szan-comment__text {
+/* A comment in the panel list stays clamped: it is the entry, not the thread. */
+.orbit-comment--clickable .orbit-comment__text {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
 }
 
-.szan-comment--clickable .szan-comment__reply-text {
+.orbit-comment--clickable .orbit-comment__reply-text {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
-.szan-comment--active {
-  border-color: var(--szan-text-feedback);
-  background: var(--szan-bg-secondary);
-}
-
-.szan-comment__time {
-  margin-top: var(--szan-space-1);
-  font-size: var(--szan-text-2xs);
-  color: var(--szan-text-quaternary);
+.orbit-comment__time {
+  margin-top: var(--orbit-space-1);
+  font-size: var(--orbit-text-2xs);
+  color: var(--orbit-text-quaternary);
   font-variant-numeric: tabular-nums;
 }
 
-.szan-comment__foot {
+.orbit-comment__foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--szan-space-2);
-  margin-top: var(--szan-space-1-5);
-  font-size: var(--szan-text-xs);
-  color: var(--szan-text-quaternary);
+  gap: var(--orbit-space-2);
+  margin-top: var(--orbit-space-2);
+  font-size: var(--orbit-text-xs);
+  color: var(--orbit-text-quaternary);
 }
 
-.szan-comment__reply {
-  margin-top: var(--szan-space-1-5);
-  padding: var(--szan-space-2) var(--szan-space-3);
-  border-left: 3px solid var(--szan-border-primary);
-  border-radius: var(--szan-radius-sm);
-  background: var(--szan-bg-secondary);
-  font-size: var(--szan-text-sm);
-  line-height: var(--szan-leading-snug);
-  color: var(--szan-text-secondary);
+/* The admin reply, as a nested note under the comment it answers. */
+.orbit-comment__reply {
+  margin-top: var(--orbit-space-2-5);
+  padding: var(--orbit-space-2-5) var(--orbit-space-3);
+  border-radius: var(--orbit-radius-lg);
+  background: var(--orbit-bg-secondary);
+  font-size: var(--orbit-text-sm);
+  line-height: var(--orbit-leading-normal);
+  color: var(--orbit-text-secondary);
   white-space: pre-wrap;
 }
 
-.szan-comment__reply-label {
-  display: block;
-  margin-bottom: var(--szan-space-0-5);
-  font-size: var(--szan-text-xs);
+.orbit-comment--clickable .orbit-comment__reply {
+  border: 1px solid var(--orbit-border-secondary);
+}
+
+.orbit-comment__reply-label {
+  display: flex;
+  align-items: center;
+  gap: var(--orbit-space-1-5);
+  margin-bottom: var(--orbit-space-1);
+  font-size: var(--orbit-text-xs);
   font-weight: 600;
-  color: var(--szan-text-quaternary);
+  color: var(--orbit-text-tertiary);
+}
+
+.orbit-comment__reply-label::before {
+  content: "";
+  width: 12px;
+  height: 1px;
+  background: var(--orbit-border-primary);
 }
 `;
 
-// ── Form ─────────────────────────────────────────────────────────────────────
+// ── Form / composer ────────────────────────────────────────────────────────────
 
 const FORM = `
-.szan-form {
+.orbit-form {
   display: flex;
   flex-direction: column;
-  gap: var(--szan-space-2);
-  margin-top: var(--szan-space-3);
+  gap: var(--orbit-space-2);
+  margin-top: var(--orbit-space-4);
+  padding-top: var(--orbit-space-4);
+  border-top: 1px solid var(--orbit-border-secondary);
 }
 
-/* Untitled UI's input shell: rounded-lg, shadow-xs and a 1px inset ring rather
-   than a border, so the focus state can thicken the ring without shifting layout. */
-.szan-input {
+/* A 1px inset ring rather than a border, so focus can thicken it without shifting
+   layout. Matches the Untitled UI field shell, restyled to Geist proportions. */
+.orbit-input {
   width: 100%;
-  /* Untitled UI's md field is 40px; their padding lands there because their
-     text-md is 16px, ours is 14px. */
-  min-height: 40px;
-  padding: var(--szan-space-2) var(--szan-space-3);
+  min-height: 38px;
+  padding: var(--orbit-space-2) var(--orbit-space-3);
   border: 0;
-  border-radius: var(--szan-radius-lg);
-  background: var(--szan-bg-primary);
-  color: var(--szan-text-primary);
-  font-size: var(--szan-text-md);
+  border-radius: var(--orbit-radius-lg);
+  background: var(--orbit-bg-primary);
+  color: var(--orbit-text-primary);
+  font-size: var(--orbit-text-md);
+  box-shadow: inset 0 0 0 1px var(--orbit-border-input);
+  transition: box-shadow var(--orbit-duration-fast) linear;
+}
+
+.orbit-input::placeholder {
+  color: var(--orbit-text-quaternary);
+}
+
+/* A crisp 1px ring in the interaction blue — Vercel's focus state. */
+.orbit-input:focus {
   box-shadow:
-    inset 0 0 0 1px var(--szan-border-input),
-    var(--szan-shadow-xs);
-  transition: box-shadow var(--szan-duration-fast) linear;
+    inset 0 0 0 1px var(--orbit-bg-feedback-solid),
+    0 0 0 3px var(--orbit-overlay-ring);
 }
 
-.szan-input::placeholder {
-  color: var(--szan-text-quaternary);
+.orbit-input[aria-invalid="true"] {
+  box-shadow: inset 0 0 0 1px var(--orbit-text-error-primary);
 }
 
-/* border-brand, not bg-brand-solid: the solid is the raw accent colour, and a
-   dark accent on a dark surface is an invisible focus ring. The border variant is
-   lightened in the dark theme. */
-.szan-input:focus {
+.orbit-input[aria-invalid="true"]:focus {
   box-shadow:
-    inset 0 0 0 2px var(--szan-border-brand),
-    var(--szan-shadow-xs);
+    inset 0 0 0 1px var(--orbit-text-error-primary),
+    0 0 0 3px color-mix(in oklab, var(--orbit-text-error-primary) 20%, transparent);
 }
 
-.szan-input[aria-invalid="true"] {
-  box-shadow:
-    inset 0 0 0 1px var(--szan-text-error-primary),
-    var(--szan-shadow-xs);
-}
-
-.szan-input[aria-invalid="true"]:focus {
-  box-shadow:
-    inset 0 0 0 2px var(--szan-text-error-primary),
-    var(--szan-shadow-xs);
-}
-
-.szan-textarea {
+.orbit-textarea {
   resize: vertical;
-  min-height: 80px;
-  line-height: var(--szan-leading-snug);
+  min-height: 76px;
+  line-height: var(--orbit-leading-normal);
 }
 
-.szan-error {
+.orbit-error {
   display: flex;
   align-items: center;
-  gap: var(--szan-space-1-5);
-  font-size: var(--szan-text-xs);
-  color: var(--szan-text-error-primary);
+  gap: var(--orbit-space-1-5);
+  font-size: var(--orbit-text-xs);
+  color: var(--orbit-text-error-primary);
 }
 
-.szan-button {
+/* The primary button: Vercel's inverted monochrome, filled, no shadow. */
+.orbit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   align-self: flex-end;
-  padding: var(--szan-space-2) var(--szan-space-4);
-  border: 1px solid var(--szan-bg-brand-solid);
-  border-radius: var(--szan-radius-md);
-  background: var(--szan-bg-brand-solid);
-  color: var(--szan-text-primary_on-brand);
-  font-size: var(--szan-text-md);
+  min-height: 36px;
+  padding: 0 var(--orbit-space-4);
+  border-radius: var(--orbit-radius-lg);
+  background: var(--orbit-bg-brand-solid);
+  color: var(--orbit-text-primary_on-brand);
+  font-size: var(--orbit-text-sm);
   font-weight: 600;
-  box-shadow: var(--szan-shadow-xs);
   transition:
-    background-color var(--szan-duration) var(--szan-ease),
-    border-color var(--szan-duration) var(--szan-ease),
-    transform var(--szan-duration-fast) var(--szan-ease);
+    background-color var(--orbit-duration) var(--orbit-ease),
+    transform var(--orbit-duration-fast) var(--orbit-ease);
 }
 
-.szan-button:hover:not(:disabled) {
-  background: var(--szan-bg-brand-solid_hover);
-  border-color: var(--szan-bg-brand-solid_hover);
+.orbit-button:hover:not(:disabled) {
+  background: var(--orbit-bg-brand-solid_hover);
 }
 
-.szan-button:active:not(:disabled) {
-  transform: scale(0.96);
+.orbit-button:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
-.szan-button:disabled {
-  border-color: var(--szan-bg-disabled);
-  background: var(--szan-bg-disabled);
-  color: var(--szan-text-disabled);
-  box-shadow: none;
+.orbit-button:disabled {
+  background: var(--orbit-bg-disabled);
+  color: var(--orbit-text-disabled);
 }
 `;
 
 // ── Overlays drawn over host elements ────────────────────────────────────────
 
 const OVERLAYS = `
-.szan-overlay {
+.orbit-overlay {
   position: fixed;
-  z-index: calc(var(--szan-z-base) + var(--szan-z-overlay));
-  border: 2px solid var(--szan-bg-feedback-solid);
-  border-radius: var(--szan-radius-sm);
-  background: var(--szan-overlay-fill);
+  z-index: calc(var(--orbit-z-base) + var(--orbit-z-overlay));
+  border: 2px solid var(--orbit-bg-feedback-solid);
+  border-radius: var(--orbit-radius-md);
+  background: var(--orbit-overlay-fill);
   pointer-events: none;
   transition:
-    top var(--szan-duration-fast) var(--szan-ease),
-    left var(--szan-duration-fast) var(--szan-ease),
-    width var(--szan-duration-fast) var(--szan-ease),
-    height var(--szan-duration-fast) var(--szan-ease);
+    top var(--orbit-duration-fast) var(--orbit-ease),
+    left var(--orbit-duration-fast) var(--orbit-ease),
+    width var(--orbit-duration-fast) var(--orbit-ease),
+    height var(--orbit-duration-fast) var(--orbit-ease);
 }
 
-.szan-overlay--selected {
-  background: var(--szan-overlay-fill-strong);
+.orbit-overlay--selected {
+  background: var(--orbit-overlay-fill-strong);
   transition: none;
 }
 
-.szan-highlight {
+.orbit-highlight {
   position: fixed;
-  z-index: calc(var(--szan-z-base) + var(--szan-z-highlight));
-  border: 2px solid var(--szan-bg-feedback-solid);
-  border-radius: var(--szan-radius-md);
-  background: var(--szan-overlay-fill-strong);
-  box-shadow: 0 0 0 4px var(--szan-overlay-ring);
+  z-index: calc(var(--orbit-z-base) + var(--orbit-z-highlight));
+  border: 2px solid var(--orbit-bg-feedback-solid);
+  border-radius: var(--orbit-radius-md);
+  background: var(--orbit-overlay-fill-strong);
+  box-shadow: 0 0 0 4px var(--orbit-overlay-ring);
   opacity: 1;
   pointer-events: none;
-  transition: opacity var(--szan-duration-slow) var(--szan-ease);
+  transition: opacity var(--orbit-duration-slow) var(--orbit-ease);
 }
 
-.szan-highlight--hover {
-  background: var(--szan-overlay-fill);
+.orbit-highlight--hover {
+  background: var(--orbit-overlay-fill);
   box-shadow: none;
 }
 
-.szan-highlight--leaving {
+.orbit-highlight--leaving {
   opacity: 0;
 }
 `;

@@ -1,6 +1,6 @@
 /**
  * Server-side helpers for Notion comments API.
- * Import from "@jasperdenouden92/annotations/server"
+ * Import from "@strakzat/orbit/server"
  */
 
 import type { Comment } from "./types";

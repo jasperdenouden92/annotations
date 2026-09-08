@@ -3,7 +3,7 @@ import { useAnnotationStyles } from "../styles/inject";
 import { useStableId } from "../utils/use-stable-id";
 import { AlertCircleIcon } from "../icons";
 
-const STORAGE_KEY_NAME = "@jasperdenouden92/annotations:commentAuteur";
+const STORAGE_KEY_NAME = "@strakzat/orbit:commentAuteur";
 
 interface CommentFormProps {
   onSubmit: (data: { auteur: string; comment: string }) => Promise<void>;
@@ -15,9 +15,9 @@ export function CommentForm({ onSubmit }: CommentFormProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const nameId = useStableId("szan-name");
-  const commentId = useStableId("szan-comment");
-  const errorId = useStableId("szan-error");
+  const nameId = useStableId("orbit-name");
+  const commentId = useStableId("orbit-comment");
+  const errorId = useStableId("orbit-error");
 
   const [auteur, setAuteur] = useState(() => {
     if (typeof window === "undefined") return "";
@@ -58,12 +58,12 @@ export function CommentForm({ onSubmit }: CommentFormProps) {
 
   return React.createElement(
     "form",
-    { className: "szan-root szan-form", onSubmit: handleSubmit },
+    { className: "orbit-root orbit-form", onSubmit: handleSubmit },
 
-    React.createElement("label", { className: "szan-sr-only", htmlFor: nameId }, "Naam"),
+    React.createElement("label", { className: "orbit-sr-only", htmlFor: nameId }, "Naam"),
     React.createElement("input", {
       id: nameId,
-      className: "szan-input",
+      className: "orbit-input",
       type: "text",
       autoComplete: "name",
       placeholder: "Naam",
@@ -75,12 +75,12 @@ export function CommentForm({ onSubmit }: CommentFormProps) {
 
     React.createElement(
       "label",
-      { className: "szan-sr-only", htmlFor: commentId },
+      { className: "orbit-sr-only", htmlFor: commentId },
       "Comment"
     ),
     React.createElement("textarea", {
       id: commentId,
-      className: "szan-input szan-textarea",
+      className: "orbit-input orbit-textarea",
       placeholder: "Schrijf een comment...",
       value: comment,
       rows: 3,
@@ -93,7 +93,7 @@ export function CommentForm({ onSubmit }: CommentFormProps) {
     error &&
       React.createElement(
         "div",
-        { id: errorId, className: "szan-error", role: "alert" },
+        { id: errorId, className: "orbit-error", role: "alert" },
         React.createElement(AlertCircleIcon, { size: 14 }),
         error
       ),
@@ -102,7 +102,7 @@ export function CommentForm({ onSubmit }: CommentFormProps) {
       "button",
       {
         type: "submit",
-        className: "szan-button",
+        className: "orbit-button",
         disabled: isSubmitting || !auteur.trim() || !comment.trim(),
       },
       isSubmitting ? "Versturen..." : "Verstuur"

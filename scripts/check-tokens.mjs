@@ -73,7 +73,7 @@ for (const file of walk(SRC)) {
     const code = line.replace(/\/\/.*$/, "").replace(/^\s*\*.*$/, "");
 
     if (!COLOUR_ALLOWLIST.has(rel) && COLOUR.test(code)) {
-      findings.push(`${at}  raw colour — use a --szan-* token\n    ${line.trim()}`);
+      findings.push(`${at}  raw colour — use a --orbit-* token\n    ${line.trim()}`);
     }
 
     // Inside src/styles these property names are the stylesheet itself.

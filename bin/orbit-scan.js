@@ -208,7 +208,7 @@ async function main() {
   const srcDir = path.join(rootDir, "src");
 
   console.log("");
-  console.log(c("bold", "  🏷️  annotate-scan"));
+  console.log(c("bold", "  🏷️  orbit-scan"));
   console.log(c("dim", `  Scanning ${path.relative(process.cwd(), srcDir) || "src/"}...\n`));
 
   if (!fs.existsSync(srcDir)) {

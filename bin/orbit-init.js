@@ -15,17 +15,17 @@ const COLORS = {
   red: "\x1b[31m",
 };
 
-const ANNOTATION_IMPORT = `import { AnnotationProvider, AnnotationButton, AnnotationPanel, Inspector } from '@jasperdenouden92/annotations'`;
+const ANNOTATION_IMPORT = `import { AnnotationProvider, AnnotationButton, AnnotationPanel, Inspector } from '@strakzat/orbit'`;
 const DATA_IMPORT = `import { annotations } from './annotations/data'`;
 
 const DATA_FILE_CONTENT = `export const annotations = []\n`;
 
-const CLAUDE_MD_SENTINEL = "<!-- @jasperdenouden92/annotations -->";
+const CLAUDE_MD_SENTINEL = "<!-- @strakzat/orbit -->";
 
 const CLAUDE_MD_CONTENT = `${CLAUDE_MD_SENTINEL}
 ## Annotations
 
-This project uses \`@jasperdenouden92/annotations\` for annotations and feedback.
+This project uses \`@strakzat/orbit\` for annotations and feedback.
 
 **Adding annotations:** edit \`src/annotations/data.js\` — append an object to the array. NEVER put annotation content directly in component files.
 
@@ -39,12 +39,12 @@ This project uses \`@jasperdenouden92/annotations\` for annotations and feedback
 - \`date\` — ISO date (YYYY-MM-DD)
 - \`type\` — (optional) \`documentation\` | \`pro\` | \`question\` | \`con\` | \`suggestion\` | \`critical\` | \`user-insight\`
 
-**Linking to an element:** set \`elementId\` to match a \`data-annotation-id\` attribute on the target element. Run \`npx annotate-scan\` to auto-add \`data-annotation-id\` attributes to UI components.
+**Linking to an element:** set \`elementId\` to match a \`data-annotation-id\` attribute on the target element. Run \`npx orbit-scan\` to auto-add \`data-annotation-id\` attributes to UI components.
 
 **Feedback/comments:** managed via the UI (Inspector mode) and the \`/api/comments\` endpoint, not via code.
 `;
 
-const API_COMMENTS_CONTENT = `import { buildNotionCommentProperties, parseNotionComment } from '@jasperdenouden92/annotations/server'
+const API_COMMENTS_CONTENT = `import { buildNotionCommentProperties, parseNotionComment } from '@strakzat/orbit/server'
 
 const { NOTION_API_KEY, NOTION_DATABASE_ID, NOTION_PROJECT_ID } = process.env
 
@@ -288,7 +288,7 @@ function ensureVitePlugin(rootDir) {
     }
   }
 
-  const pluginImport = `import { annotationsDevApi } from '@jasperdenouden92/annotations/vite'`;
+  const pluginImport = `import { annotationsDevApi } from '@strakzat/orbit/vite'`;
 
   if (lastImportIndex === -1) {
     lines.unshift(pluginImport);
@@ -349,7 +349,7 @@ function findLayoutFile(rootDir) {
 // ── Layout file injection ───────────────────────────────────────────────────
 
 function hasAnnotationSetup(content) {
-  return content.includes("AnnotationProvider") || content.includes("@jasperdenouden92/annotations");
+  return content.includes("AnnotationProvider") || content.includes("@strakzat/orbit");
 }
 
 function injectImports(content, layoutRelPath) {
@@ -524,7 +524,7 @@ function main() {
   const srcDir = path.join(rootDir, "src");
 
   console.log("");
-  console.log(c("bold", "  annotate-init"));
+  console.log(c("bold", "  orbit-init"));
   console.log(c("dim", `  Setting up annotations in ${path.relative(process.cwd(), rootDir) || "."}...\n`));
 
   if (!fs.existsSync(srcDir)) {
@@ -622,7 +622,7 @@ function main() {
   console.log(c("dim", "  Volgende stappen:"));
   console.log(c("dim", "  1. Stel NOTION_API_KEY, NOTION_DATABASE_ID en NOTION_PROJECT_ID in als env vars"));
   console.log(c("dim", "  2. Voeg annotaties toe in src/annotations/data.js"));
-  console.log(c("dim", "  3. Draai annotate-scan om data-annotation-id's te plaatsen"));
+  console.log(c("dim", "  3. Draai orbit-scan om data-annotation-id's te plaatsen"));
   console.log(c("dim", "  4. Start je app en druk op Cmd+. om het paneel te openen\n"));
 }
 

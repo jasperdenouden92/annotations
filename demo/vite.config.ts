@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react(), mockCommentsApi()],
   resolve: {
     alias: {
-      "@jasperdenouden92/annotations": path.resolve(__dirname, "../dist/index.mjs"),
+      "@strakzat/orbit": path.resolve(__dirname, "../dist/index.mjs"),
     },
   },
 });
