@@ -53,7 +53,7 @@ export function useComments({
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (!warnedRef.current) {
         warnedRef.current = true;
-        console.warn(`[@jasperdenouden92/annotations] Comments API niet beschikbaar: ${message}`);
+        console.warn(`[@strakzat/orbit] Comments API niet beschikbaar: ${message}`);
       }
     }
   }, [apiBase, project, annotationId, enabled]);

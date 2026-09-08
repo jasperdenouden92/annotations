@@ -13,9 +13,11 @@ interface MockComment {
 }
 
 const comments: MockComment[] = [
+  // Feedback on the same id the annotation uses ("2" = the Omzet card), so the
+  // annotation and its feedback live in one thread on one component.
   {
     id: "1",
-    annotationId: "card-omzet",
+    annotationId: "2",
     auteur: "Klant A",
     comment: "Deze KPI moet nog gekoppeld worden aan de echte data bron.",
     status: "Open",
@@ -26,7 +28,7 @@ const comments: MockComment[] = [
   },
   {
     id: "2",
-    annotationId: "card-orders",
+    annotationId: "3",
     auteur: "Klant B",
     comment: "Kleur past niet bij het design systeem, graag aanpassen.",
     status: "In behandeling",
@@ -35,16 +37,18 @@ const comments: MockComment[] = [
     pagina: "/",
     label: "Orders card",
   },
+  // Feedback on an element without an annotation, placed through the inspector —
+  // shows up as its own standalone feedback pin.
   {
     id: "3",
-    annotationId: "profiel-sectie",
+    annotationId: "activiteit",
     auteur: "Klant C",
-    comment: "De alerts moeten duidelijker zijn qua prioriteit.",
+    comment: "De volgorde van de activiteiten is onduidelijk — nieuwste eerst?",
     status: "Opgelost",
     antwoord: "Is opgelost in v1.2.",
     aangemaakt: new Date(Date.now() - 259200000).toISOString(),
-    pagina: "/instellingen",
-    label: "Profiel sectie",
+    pagina: "/",
+    label: "Recente activiteit",
   },
 ];
 

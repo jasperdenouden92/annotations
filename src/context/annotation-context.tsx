@@ -86,7 +86,7 @@ export function AnnotationProvider({
       annotations.some((a) => a.target !== "global" && a.target !== "/")
     ) {
       console.warn(
-        '[@jasperdenouden92/annotations] currentRoute prop is not set on AnnotationProvider, ' +
+        '[@strakzat/orbit] currentRoute prop is not set on AnnotationProvider, ' +
         'but some annotations have route-specific targets. The "current page" filter will not work correctly. ' +
         'Pass currentRoute={window.location.pathname} or your router\'s current path.'
       );

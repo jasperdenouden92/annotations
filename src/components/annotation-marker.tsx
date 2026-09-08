@@ -28,7 +28,7 @@ export function AnnotationMarker({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const popoverId = useStableId("szan-popover");
+  const popoverId = useStableId("orbit-popover");
 
   const {
     annotationMode,
@@ -82,7 +82,7 @@ export function AnnotationMarker({
   // users are not dropped at the top of the document.
   const close = useCallback(() => {
     setActiveAnnotationId(null);
-    wrapperRef.current?.querySelector<HTMLElement>("button.szan-marker")?.focus();
+    wrapperRef.current?.querySelector<HTMLElement>("button.orbit-marker")?.focus();
   }, [setActiveAnnotationId]);
 
   const handleClick = (e: React.MouseEvent) => {
@@ -93,20 +93,25 @@ export function AnnotationMarker({
 
   return React.createElement(
     "div",
-    { className: cx("szan-contents", className) },
+    { className: cx("orbit-contents", className) },
     React.createElement(
       "div",
       {
         ref: wrapperRef,
-        // Deliberately no `szan-root` here: this element wraps the consumer's own
-        // components, and the reset that comes with szan-root would strip their
+        // Deliberately no `orbit-root` here: this element wraps the consumer's own
+        // components, and the reset that comes with orbit-root would strip their
         // styling. The ring needs no reset, and the badges inside carry their own.
         className: cx(
-          "szan-marker-wrap",
-          showMarkers && (isActive || isHovered) && "szan-marker-wrap--lit",
-          showMarkers && isActive && "szan-marker-wrap--active"
+          "orbit-marker-wrap",
+          showMarkers && (isActive || isHovered) && "orbit-marker-wrap--lit",
+          showMarkers && isActive && "orbit-marker-wrap--active"
         ),
-        "data-szan-type": annotationType,
+        // Stamp the annotation id on the wrapper so the element is identified by the
+        // *same* id everywhere: the inspector walking up for feedback resolves to this
+        // id, findElementByAnnotationId() locates it, and annotation + feedback end up
+        // in one thread on one component instead of three separate buckets.
+        "data-annotation-id": annotationId,
+        "data-orbit-type": annotationType,
       },
       children,
 

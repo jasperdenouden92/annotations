@@ -50,7 +50,7 @@ export function FeedbackMarkers() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const popoverId = useStableId("szan-feedback-popover");
+  const popoverId = useStableId("orbit-feedback-popover");
 
   const showMarkers = mounted && (annotationMode || inspectorActive);
 
@@ -111,7 +111,7 @@ export function FeedbackMarkers() {
         openCount,
         totalCount: comments.length,
         allResolved: openCount === 0,
-        sharesCorner: !!el && (annotated.has(el) || !!el.closest(".szan-marker-wrap")),
+        sharesCorner: !!el && (annotated.has(el) || !!el.closest(".orbit-marker-wrap")),
         unplaced: !el,
       });
     }
@@ -142,7 +142,7 @@ export function FeedbackMarkers() {
   const close = useCallback(() => {
     setActiveAnnotationId(null);
     document
-      .querySelector<HTMLElement>(`button.szan-marker[aria-controls="${popoverId}"]`)
+      .querySelector<HTMLElement>(`button.orbit-marker[aria-controls="${popoverId}"]`)
       ?.focus();
   }, [setActiveAnnotationId, popoverId]);
 
@@ -187,8 +187,8 @@ export function FeedbackMarkers() {
         id: popoverId,
         header: React.createElement(
           "div",
-          { className: "szan-popover__section" },
-          React.createElement("div", { className: "szan-mono" }, activeBadge.label)
+          { className: "orbit-popover__section" },
+          React.createElement("div", { className: "orbit-mono" }, activeBadge.label)
         ),
         showComments: true,
         comments,

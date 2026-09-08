@@ -4,7 +4,7 @@ import {
   AnnotationButton,
   AnnotationPanel,
   AnnotationMarker,
-} from "@jasperdenouden92/annotations";
+} from "@strakzat/orbit";
 import { annotations } from "./annotations";
 
 // ── Simple client-side router ───────────────────────────────────────────────
@@ -111,7 +111,7 @@ function DashboardPage() {
         Dashboard
       </h1>
       <p style={{ color: "#667085", marginBottom: 32 }}>
-        Demo van het @jasperdenouden92/annotations package
+        Demo van Orbit — @strakzat/orbit
       </p>
 
       <div

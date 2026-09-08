@@ -15,7 +15,7 @@ export function TypeBadge({ type }: TypeBadgeProps) {
 
   return React.createElement(
     "span",
-    { className: "szan-type-badge", "data-szan-type": type },
+    { className: "orbit-type-badge", "data-orbit-type": type },
     React.createElement(Icon, { size: 12 }),
     type
   );

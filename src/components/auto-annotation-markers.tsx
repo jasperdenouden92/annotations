@@ -54,7 +54,7 @@ export function AutoAnnotationMarkers() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const popoverId = useStableId("szan-auto-popover");
+  const popoverId = useStableId("orbit-auto-popover");
 
   // Find the active auto-badge (if any) for popover rendering
   const activeBadge = activeAnnotationId
@@ -180,7 +180,7 @@ export function AutoAnnotationMarkers() {
   const close = useCallback(() => {
     setActiveAnnotationId(null);
     document
-      .querySelector<HTMLElement>(`button.szan-marker[aria-controls="${popoverId}"]`)
+      .querySelector<HTMLElement>(`button.orbit-marker[aria-controls="${popoverId}"]`)
       ?.focus();
   }, [setActiveAnnotationId, popoverId]);
 

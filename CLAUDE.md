@@ -1,11 +1,11 @@
-# @jasperdenouden92/annotations
+# Orbit (`@strakzat/orbit`)
 
 Client-facing annotation & feedback engine voor alle projecten. React-based, zero runtime dependencies buiten React.
 
 ## Quick start (consuming project)
 
 ```tsx
-import { AnnotationProvider, AnnotationButton, AnnotationPanel, AnnotationMarker } from "@jasperdenouden92/annotations";
+import { AnnotationProvider, AnnotationButton, AnnotationPanel, AnnotationMarker } from "@strakzat/orbit";
 
 <AnnotationProvider
   annotations={annotations}
@@ -84,7 +84,7 @@ interface CommentsConfig {
 {
   togglePosition: "bottom-right",
   defaultVisible: false,
-  accentColor: "#344054",
+  accentColor: "#171717",
   panelWidth: 420,
   panelHeight: 640,
   zIndex: 9000,
@@ -134,6 +134,7 @@ src/
 │   └── use-all-comments.ts            — Fetch alle comments voor project (polls 30s)
 └── utils/
     ├── cx.ts                          — Class names samenvoegen
+    ├── format.ts                      — initials() + relativeTime() voor de comment-UI
     ├── drag.ts                        — Button/panel positioning + drag-to-corner logic
     ├── element-id.ts                  — getElementPath() CSS selector + getElementLabel() preview
     ├── find-element.ts                — findElementByAnnotationId() 3-tier lookup + highlight overlays
@@ -149,6 +150,8 @@ Wanneer een gebruiker een element klikt in inspector mode, wordt het element gei
 1. **data-annotation-id** — Loopt DOM tree op, zoekt eerste ancestor met `data-annotation-id` attribuut (voorgedefinieerde annotation markers). Skipt full-page containers (>90% viewport).
 2. **id** — Als geen annotation_id gevonden, loopt opnieuw op zoekend naar `id` attribuut. Skipt full-page containers.
 3. **CSS selector path** — Fallback: genereert pad als `#root > div > section:nth-of-type(2) > button`.
+
+**Annotatie en feedback delen één id per component.** `AnnotationMarker` stempelt `data-annotation-id={annotationId}` op z'n wrapper. Klik je zo'n element aan in inspector mode, dan vindt pass 1 díe id — niet de element-`id` eronder of een CSS-pad. Zo landt nieuwe feedback in dezelfde bak als de annotatie, toont de annotatie-popover die feedback in z'n eigen sectie, en verschijnt er geen tweede losse feedback-pin (`FeedbackMarkers` slaat geregistreerde marker-id's over). Eén kaart, één thread.
 
 Het opgeslagen `annotationId` in een Comment wordt later opgezocht via `findElementByAnnotationId()`:
 1. `document.getElementById(id)`
@@ -183,10 +186,10 @@ Als `apiBase` leeg is, wordt `window.location.origin` gebruikt.
 
 ## Server helpers (voor consuming projects)
 
-Het package exporteert server-side helpers via `@jasperdenouden92/annotations/server` voor gebruik in API routes. **Gebruik deze altijd** bij het bouwen van een comments API — ze garanderen dat alle velden (inclusief `pagina`) correct worden opgeslagen.
+Het package exporteert server-side helpers via `@strakzat/orbit/server` voor gebruik in API routes. **Gebruik deze altijd** bij het bouwen van een comments API — ze garanderen dat alle velden (inclusief `pagina`) correct worden opgeslagen.
 
 ```typescript
-import { buildNotionCommentProperties, parseNotionComment } from "@jasperdenouden92/annotations/server";
+import { buildNotionCommentProperties, parseNotionComment } from "@strakzat/orbit/server";
 
 // POST handler — bouwt alle Notion properties inclusief Pagina
 const properties = buildNotionCommentProperties(
@@ -208,7 +211,7 @@ const comments = data.results.map(parseNotionComment);
 Vite serveert geen Vercel serverless functions, dus `/api/comments` geeft een 404 tijdens local dev. Het package biedt een Vite plugin die de API middleware inline afhandelt:
 
 ```typescript
-import { annotationsDevApi } from "@jasperdenouden92/annotations/vite";
+import { annotationsDevApi } from "@strakzat/orbit/vite";
 
 export default defineConfig({
   plugins: [annotationsDevApi(), react()],
@@ -229,7 +232,7 @@ Output: `dist/index.js` (CJS), `dist/index.mjs` (ESM), `dist/index.d.ts` (types)
 
 ## Theming
 
-Het package injecteert één stylesheet in `document.head` (`<style data-szan-styles>`), de eerste keer dat een component mount. De consumer importeert niets. Alles is geprefixt met `szan-`: elke class, elke variabele, elk data-attribuut.
+Het package injecteert één stylesheet in `document.head` (`<style data-orbit-styles>`), de eerste keer dat een component mount. De consumer importeert niets. Alles is geprefixt met `orbit-`: elke class, elke variabele, elk data-attribuut.
 
 ### Waarom een stylesheet en niet inline styles
 
@@ -241,11 +244,11 @@ Inline styles blijven alléén voor runtime-metingen: de positie van een popover
 
 De module draait in de app van een klant, dus de CSS gaat twee kanten op lekken als je niet oppast. Drie maatregelen:
 
-1. Elke selector draagt `szan-`.
-2. Elk element dat wij renderen draagt óók `.szan-root`, en er is een reset op `.szan-root, .szan-root *`. Die weegt zwaarder dan een kale `button {}` of `* {}` uit de host.
+1. Elke selector draagt `orbit-`.
+2. Elk element dat wij renderen draagt óók `.orbit-root`, en er is een reset op `.orbit-root, .orbit-root *`. Die weegt zwaarder dan een kale `button {}` of `* {}` uit de host.
 3. De reset staat als eerste in de sheet, zodat de componentregels erna winnen bij gelijke specificiteit.
 
-**Uitzondering:** `.szan-marker-wrap` in `annotation-marker.tsx` draagt bewust géén `szan-root`, want dat element omsluit de componenten van de klant zelf. De reset zou hun styling slopen.
+**Uitzondering:** `.orbit-marker-wrap` in `annotation-marker.tsx` draagt bewust géén `orbit-root`, want dat element omsluit de componenten van de klant zelf. De reset zou hun styling slopen.
 
 Wat er nog wél doorheen komt: een host-regel met `!important`. Alleen `box-sizing` is daartegen verdedigd (met `!important`), omdat `content-box` elke breedte in de module kapotmaakt. Een geforceerd `font-family` komt er doorheen — cosmetisch, geen structurele schade.
 
@@ -254,7 +257,7 @@ Wat er nog wél doorheen komt: een host-regel met `!important`. Alleen `box-sizi
 Volgt `prefers-color-scheme`. Handmatig te overrulen op `<html>`:
 
 ```js
-document.documentElement.setAttribute("data-szan-theme", "light"); // of "dark"
+document.documentElement.setAttribute("data-orbit-theme", "light"); // of "dark"
 ```
 
 Let op: de module volgt het OS, ook als de host-app zelf alleen licht is. Zet het attribuut op `"light"` als de module mee moet met een app zonder dark mode. De attribuutnaam is geëxporteerd als `THEME_ATTR`.
@@ -265,23 +268,23 @@ Overschrijf ze op `:root` of op een ancestor. Hernoemen is breaking, dus dat geb
 
 | Groep | Tokens |
 |---|---|
-| Achtergrond | `--szan-bg-primary`, `-primary_hover`, `-secondary`, `-secondary_hover`, `-tertiary`, `-quaternary`, `-disabled` |
-| Tekst | `--szan-text-primary`, `-secondary`, `-tertiary`, `-quaternary`, `-disabled` |
-| Rand | `--szan-border-primary`, `-secondary`, `--szan-border-input` |
+| Achtergrond | `--orbit-bg-primary`, `-primary_hover`, `-secondary`, `-secondary_hover`, `-tertiary`, `-quaternary`, `-disabled` |
+| Tekst | `--orbit-text-primary`, `-secondary`, `-tertiary`, `-quaternary`, `-disabled` |
+| Rand | `--orbit-border-primary`, `-secondary`, `--orbit-border-input` |
 | Popover | `POPOVER_MAX_HEIGHT` in `marker-geometry.ts`; `popover-position.ts` klemt dat af op de ruimte die er werkelijk is |
-| Focus | `--szan-outline-focus-ring` |
-| Brand | `--szan-brand` en de afgeleiden `--szan-bg-brand-solid`, `-solid_hover`, `--szan-bg-brand-primary`, `--szan-border-brand`, `--szan-text-brand-secondary`, `--szan-text-primary_on-brand` |
-| Status | `--szan-bg-{error,warning,success}-primary`, `--szan-border-{…}`, `--szan-text-{…}-primary` |
-| Feedback | `--szan-bg-feedback`, `--szan-border-feedback`, `--szan-text-feedback`, `--szan-bg-feedback-solid` |
-| Overlay | `--szan-overlay-fill`, `-fill-strong`, `--szan-overlay-ring` |
-| Type | `--szan-type-{documentation,pro,question,con,suggestion,critical,user-insight}-{bg,border,fg}` |
-| Schaal | `--szan-space-*`, `--szan-radius-*`, `--szan-text-*`, `--szan-shadow-*`, `--szan-font-body`, `--szan-font-mono` |
-| Motion | `--szan-duration-fast`, `--szan-duration`, `--szan-duration-slow`, `--szan-ease` |
-| Stapeling | `--szan-z-base` (uit `settings.zIndex`) plus vaste offsets |
+| Focus | `--orbit-outline-focus-ring` |
+| Brand | `--orbit-brand` en de afgeleiden `--orbit-bg-brand-solid`, `-solid_hover`, `--orbit-bg-brand-primary`, `--orbit-border-brand`, `--orbit-text-brand-secondary`, `--orbit-text-primary_on-brand` |
+| Status | `--orbit-bg-{error,warning,success}-primary`, `--orbit-border-{…}`, `--orbit-text-{…}-primary` |
+| Feedback | `--orbit-bg-feedback`, `--orbit-border-feedback`, `--orbit-text-feedback`, `--orbit-bg-feedback-solid` |
+| Overlay | `--orbit-overlay-fill`, `-fill-strong`, `--orbit-overlay-ring` |
+| Type | `--orbit-type-{documentation,pro,question,con,suggestion,critical,user-insight}-{bg,border,fg}` |
+| Schaal | `--orbit-space-*`, `--orbit-radius-*`, `--orbit-text-*`, `--orbit-shadow-*`, `--orbit-font-body`, `--orbit-font-mono` |
+| Motion | `--orbit-duration-fast`, `--orbit-duration`, `--orbit-duration-slow`, `--orbit-ease` |
+| Stapeling | `--orbit-z-base` (uit `settings.zIndex`) plus vaste offsets |
 
-De naamgeving volgt de semantische laag van Untitled UI (`bg-primary`, `text-tertiary`, `*_hover`, `*_on-brand`), zodat het vocabulaire hetzelfde is als in onze Tailwind-projecten. Tailwind zelf zit hier niet in: dat zou elke consumer een buildstap opleggen.
+De naamgeving volgt de semantische laag van Untitled UI (`bg-primary`, `text-tertiary`, `*_hover`, `*_on-brand`), zodat het vocabulaire hetzelfde is als in onze Tailwind-projecten. De *waarden* zijn Geist: Vercels bijna-monochrome palet — witte/bijna-zwarte vlakken, hairline randen, één blauw voor de comment-laag, en een grote zachte schaduw op alles wat zweeft. Het lettertype is Geist eerst in de stack, met een val terug op het systeem (geen fontbestanden gebundeld). Tailwind zelf zit hier niet in: dat zou elke consumer een buildstap opleggen.
 
-**`accentColor` → brand.** Eén kleur in `settings.accentColor` voedt `--szan-brand`; de rest wordt afgeleid met `color-mix()`. `--szan-text-primary_on-brand` kan dat niet — die wordt in JS berekend uit de luminantie, zodat de tekst op een brandknop 4.5:1 haalt bij elke ingestelde kleur.
+**`accentColor` tint, hij kleurt de primaire knop niet.** Eén kleur in `settings.accentColor` voedt `--orbit-brand`; daaruit worden de stille brand-tokens afgeleid met `color-mix()` — de subtiele vulling, de rand, de secundaire tekst. De solide brandknop (`--orbit-bg-brand-solid`) is bewust *niet* van de accent afgeleid: hij is een theme-aware constante — bijna-zwart in licht, bijna-wit in donker, Vercels omgekeerde primaire knop — zodat hij in beide thema's leesbaar blijft wat een consumer ook instelt. `onBrandTextColor()` blijft geëxporteerd voor wie zelf een brandknop bouwt.
 
 ### Wat bewust anders is
 
@@ -292,10 +295,10 @@ De naamgeving volgt de semantische laag van Untitled UI (`bg-primary`, `text-ter
 
 ## Accessibility
 
-- Elk interactief element heeft een zichtbare `:focus-visible` outline van 2px in `--szan-outline-focus-ring` (4.58:1 op `bg-primary`).
-- `--szan-text-quaternary` is `#667085` (4.97:1), niet het oude `#98A2B3` (2.58:1). Die grijstint droeg echte inhoud — auteurs, datums, breadcrumbs — en zakte door WCAG 1.4.3.
-- **Uitzondering:** `--szan-border-input` is Untitled UI's eigen `#D0D5DD` (1,6:1) en haalt de 3:1 van WCAG 1.4.11 niet. Bewuste keuze, om de velden er hetzelfde uit te laten zien als in onze andere projecten; de focusring van 2px in `--szan-bg-brand-solid` draagt de last. Overschrijf de token om de rand te verzwaren.
-- Elk veld heeft een `<label>`; visueel verborgen met `.szan-sr-only` waar het ontwerp er geen ruimte voor heeft.
+- Elk interactief element heeft een zichtbare `:focus-visible` outline van 2px in `--orbit-outline-focus-ring` — de Vercel-blauw `#0070F3`.
+- Content-grijstinten blijven ≥ 4.5:1 op `bg-primary`. `--orbit-text-quaternary` is `#737373` (4.74:1) — die tint draagt echte inhoud (auteurs, datums, breadcrumbs) en moet door WCAG 1.4.3. `--orbit-text-disabled` (`#A1A1A1`) is bewust decoratief.
+- **Uitzondering:** `--orbit-border-input` is een hairline (`#E0E0E0`) en haalt de 3:1 van WCAG 1.4.11 niet op zichzelf. Bewuste keuze voor de Vercel-look; de focusring draagt de last. Overschrijf de token om de rand te verzwaren.
+- Elk veld heeft een `<label>`; visueel verborgen met `.orbit-sr-only` waar het ontwerp er geen ruimte voor heeft.
 - Kaarten met twee acties gebruiken een uitgerekte overlay-knop plus een link erboven, want een `<button>` mag geen `<button>` bevatten.
 - Escape sluit paneel, popover en inspector, en geeft de focus terug aan de knop die ze opende.
 - `prefers-reduced-motion: reduce` zet alle transities en animaties in de module op 0,01ms.
@@ -307,7 +310,7 @@ De naamgeving volgt de semantische laag van Untitled UI (`bg-primary`, `text-ter
 - Geen externe dependencies buiten de React peer dep.
 - `useAnnotationsSafe()` geeft safe defaults wanneer buiten AnnotationProvider — voorkomt crashes bij optioneel gebruik.
 - `useAnnotationStyles()` staat in élk geëxporteerd component, niet alleen in de provider, omdat `useAnnotationsSafe()` gebruik buiten de provider toestaat. Een refcount zorgt dat de sheet één keer bestaat.
-- Panel corner positie wordt opgeslagen in localStorage (`@jasperdenouden92/annotations:panelCorner`).
+- Panel corner positie wordt opgeslagen in localStorage (`@strakzat/orbit:panelCorner`).
 - Comments worden gepolled elke 30 seconden wanneer annotation mode of inspector actief is.
 
 ## Checks

@@ -27,14 +27,16 @@ export const DEFAULT_LABELS: AnnotationLabels = {
 export const DEFAULT_SETTINGS: Required<AnnotationSettings> = {
   togglePosition: "bottom-right",
   defaultVisible: false,
-  accentColor: "#344054",
+  // Tints the quiet brand tokens (subtle fill, border, links). The primary button is
+  // a theme-aware monochrome constant, so this no longer needs to read on both themes.
+  accentColor: "#171717",
   panelWidth: 420,
   panelHeight: 640,
   zIndex: 9000,
   keyboardShortcut: true,
 };
 
-export const STORAGE_KEY_PANEL_CORNER = "@jasperdenouden92/annotations:panelCorner";
+export const STORAGE_KEY_PANEL_CORNER = "@strakzat/orbit:panelCorner";
 
 // Colours live in src/styles/tokens.ts as CSS custom properties. Nothing here
 // should carry a colour value: the check:tokens script fails the build if it does.

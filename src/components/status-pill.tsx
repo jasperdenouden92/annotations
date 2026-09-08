@@ -10,7 +10,7 @@ interface StatusPillProps {
 export function StatusPill({ status }: StatusPillProps) {
   return React.createElement(
     "span",
-    { className: "szan-status", "data-szan-status": STATUS_SLUGS[status] },
+    { className: "orbit-status", "data-orbit-status": STATUS_SLUGS[status] },
     status
   );
 }

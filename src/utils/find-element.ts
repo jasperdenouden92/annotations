@@ -29,23 +29,23 @@ export function findElementByAnnotationId(annotationId: string): HTMLElement | n
   return null;
 }
 
-const HOVER_ATTR = "data-szan-hover-highlight";
+const HOVER_ATTR = "data-orbit-hover-highlight";
 let hoverDispose: (() => void) | null = null;
 const HIGHLIGHT_PADDING = 4;
 const FLASH_DURATION = 2000;
-const FADE_DURATION = 200; // must match --szan-duration-slow
+const FADE_DURATION = 200; // must match --orbit-duration-slow
 
 /**
  * Draws a box over a host element. The overlay is a real DOM node in the host page
  * rather than a React element, because it has to sit over content this module does
- * not render — so it carries `.szan-root` and picks up the same tokens.
+ * not render — so it carries `.orbit-root` and picks up the same tokens.
  */
 function createOverlay(el: HTMLElement, className: string): {
   overlay: HTMLElement;
   dispose: () => void;
 } {
   const overlay = document.createElement("div");
-  overlay.className = `szan-root ${className}`;
+  overlay.className = `orbit-root ${className}`;
 
   const position = () => {
     const rect = el.getBoundingClientRect();
@@ -74,10 +74,10 @@ function createOverlay(el: HTMLElement, className: string): {
 export function scrollToAndHighlight(el: HTMLElement): void {
   el.scrollIntoView({ behavior: "smooth", block: "center" });
 
-  const { overlay, dispose } = createOverlay(el, "szan-highlight");
+  const { overlay, dispose } = createOverlay(el, "orbit-highlight");
 
   window.setTimeout(() => {
-    overlay.classList.add("szan-highlight--leaving");
+    overlay.classList.add("orbit-highlight--leaving");
     window.setTimeout(dispose, FADE_DURATION + 100);
   }, FLASH_DURATION);
 }
@@ -86,7 +86,7 @@ export function scrollToAndHighlight(el: HTMLElement): void {
 export function showHoverHighlight(el: HTMLElement): () => void {
   removeHoverHighlight();
 
-  const { overlay, dispose } = createOverlay(el, "szan-highlight szan-highlight--hover");
+  const { overlay, dispose } = createOverlay(el, "orbit-highlight orbit-highlight--hover");
   overlay.setAttribute(HOVER_ATTR, "");
   hoverDispose = dispose;
 

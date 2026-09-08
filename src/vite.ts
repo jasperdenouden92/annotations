@@ -1,9 +1,9 @@
 /**
  * Vite dev server plugin for local /api/comments handling.
- * Import from "@jasperdenouden92/annotations/vite"
+ * Import from "@strakzat/orbit/vite"
  *
  * Usage in vite.config.ts:
- *   import { annotationsDevApi } from '@jasperdenouden92/annotations/vite'
+ *   import { annotationsDevApi } from '@strakzat/orbit/vite'
  *   export default defineConfig({ plugins: [annotationsDevApi(), react()] })
  */
 

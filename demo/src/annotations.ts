@@ -1,4 +1,4 @@
-import type { Annotation } from "@jasperdenouden92/annotations";
+import type { Annotation } from "@strakzat/orbit";
 
 export const annotations: Annotation[] = [
   {
@@ -13,7 +13,7 @@ export const annotations: Annotation[] = [
   {
     id: "2",
     target: "/",
-    elementId: "revenue-card",
+    elementId: "card-omzet",
     title: "Omzet tracking werkt goed",
     body: "De real-time omzet tracking geeft gebruikers direct inzicht. Dit is een van de meest gebruikte features.",
     author: "Jasper",
@@ -23,7 +23,7 @@ export const annotations: Annotation[] = [
   {
     id: "3",
     target: "/",
-    elementId: "orders-card",
+    elementId: "card-orders",
     title: "Hoe wordt het target berekend?",
     body: "Het target lijkt statisch ingesteld. Moet dit dynamisch meegroeien op basis van historische data?",
     author: "Elwin",
@@ -33,7 +33,7 @@ export const annotations: Annotation[] = [
   {
     id: "4",
     target: "/",
-    elementId: "alert-card",
+    elementId: "card-acties",
     title: "Alerting mist prioriteit",
     body: "Alle alerts worden gelijk behandeld. Er ontbreekt een urgentie-level waardoor gebruikers niet weten wat eerst opgepakt moet worden.",
     author: "Jasper",

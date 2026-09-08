@@ -56,22 +56,22 @@ export function MarkerBadge({
   const Icon = variant === "feedback" ? MessageSquareTextIcon : TYPE_ICONS[type];
 
   const className = cx(
-    "szan-root",
-    "szan-marker",
-    placement === "fixed" ? "szan-marker--fixed" : "szan-marker--absolute",
-    variant === "feedback" && "szan-marker--feedback",
-    resolved && "szan-marker--resolved",
-    active && "szan-marker--active",
-    behind && "szan-marker--behind",
-    unplaced && "szan-marker--unplaced",
-    !interactive && "szan-marker--static"
+    "orbit-root",
+    "orbit-marker",
+    placement === "fixed" ? "orbit-marker--fixed" : "orbit-marker--absolute",
+    variant === "feedback" && "orbit-marker--feedback",
+    resolved && "orbit-marker--resolved",
+    active && "orbit-marker--active",
+    behind && "orbit-marker--behind",
+    unplaced && "orbit-marker--unplaced",
+    !interactive && "orbit-marker--static"
   );
 
   const content =
     count !== undefined && count > 0
       ? React.createElement(
           "span",
-          { className: "szan-marker__count", "aria-hidden": true },
+          { className: "orbit-marker__count", "aria-hidden": true },
           count
         )
       : React.createElement(Icon, { size: 14 });
@@ -82,9 +82,9 @@ export function MarkerBadge({
       {
         className,
         style,
-        "data-szan-type": variant === "annotation" ? type : undefined,
+        "data-orbit-type": variant === "annotation" ? type : undefined,
       },
-      React.createElement("span", { className: "szan-sr-only" }, label),
+      React.createElement("span", { className: "orbit-sr-only" }, label),
       content
     );
   }
@@ -95,7 +95,7 @@ export function MarkerBadge({
       type: "button",
       className,
       style,
-      "data-szan-type": variant === "annotation" ? type : undefined,
+      "data-orbit-type": variant === "annotation" ? type : undefined,
       "aria-label": label,
       "aria-expanded": controls ? !!active : undefined,
       "aria-controls": controls && active ? controls : undefined,

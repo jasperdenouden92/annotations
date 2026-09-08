@@ -25,7 +25,7 @@ export function AnnotationCard({
   onHoverStart,
   onHoverEnd,
 }: AnnotationCardProps) {
-  const titleId = useStableId("szan-card-title");
+  const titleId = useStableId("orbit-card-title");
   const type = annotation.type ?? "documentation";
   const hasElement = !!annotation.elementId;
   const breadcrumb = routeBreadcrumb(annotation.target);
@@ -35,9 +35,9 @@ export function AnnotationCard({
     "div",
     {
       className: cx(
-        "szan-card",
-        isHovered && "szan-card--hovered",
-        isActive && "szan-card--active"
+        "orbit-card",
+        isHovered && "orbit-card--hovered",
+        isActive && "orbit-card--active"
       ),
       onMouseEnter: () => onHoverStart(annotation.id),
       onMouseLeave: onHoverEnd,
@@ -51,7 +51,7 @@ export function AnnotationCard({
     // entry, not a second copy of the annotation.
     React.createElement("button", {
       type: "button",
-      className: "szan-card__target",
+      className: "orbit-card__target",
       onClick: onSelect,
       "aria-labelledby": titleId,
       "aria-expanded": isActive,
@@ -59,32 +59,32 @@ export function AnnotationCard({
 
     React.createElement(
       "div",
-      { className: "szan-card__head" },
+      { className: "orbit-card__head" },
       React.createElement(
         "span",
-        { className: "szan-card__title", id: titleId },
+        { className: "orbit-card__title", id: titleId },
         annotation.title
       ),
       hasElement &&
         React.createElement(
           "span",
-          { className: "szan-card__pin" },
+          { className: "orbit-card__pin" },
           React.createElement(CrosshairIcon, { size: 12 })
         ),
       React.createElement(TypeBadge, { type })
     ),
 
-    React.createElement("p", { className: "szan-card__body" }, annotation.body),
+    React.createElement("p", { className: "orbit-card__body" }, annotation.body),
 
     React.createElement(
       "div",
-      { className: "szan-card__foot" },
+      { className: "orbit-card__foot" },
       canNavigate
         ? React.createElement(
             "button",
             {
               type: "button",
-              className: "szan-link",
+              className: "orbit-link",
               onClick: (e: React.MouseEvent) => {
                 e.stopPropagation();
                 navigateTo(annotation.target);
@@ -92,10 +92,10 @@ export function AnnotationCard({
             },
             breadcrumb
           )
-        : React.createElement("span", { className: "szan-meta" }, breadcrumb),
+        : React.createElement("span", { className: "orbit-meta" }, breadcrumb),
       React.createElement(
         "span",
-        { className: "szan-meta" },
+        { className: "orbit-meta" },
         `${annotation.author} · ${annotation.date}`
       )
     )

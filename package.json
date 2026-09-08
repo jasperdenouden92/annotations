@@ -1,7 +1,7 @@
 {
-  "name": "@jasperdenouden92/annotations",
-  "version": "2.8.0",
-  "description": "Client-facing annotation engine voor alle projecten",
+  "name": "@strakzat/orbit",
+  "version": "3.0.0",
+  "description": "Orbit — client-facing annotation & feedback engine voor alle projecten",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -23,8 +23,8 @@
     }
   },
   "bin": {
-    "annotate-scan": "./bin/annotate-scan.js",
-    "annotate-init": "./bin/annotate-init.js"
+    "orbit-scan": "./bin/orbit-scan.js",
+    "orbit-init": "./bin/orbit-init.js"
   },
   "files": [
     "dist",
@@ -44,7 +44,7 @@
     "react-dom": ">=17"
   },
   "devDependencies": {
-    "@types/node": "^25.5.2",
+    "@types/node": "^25.9.5",
     "@types/react": "^18",
     "tsup": "^8",
     "typescript": "~5.6"
@@ -55,6 +55,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jasperdenouden92/annotations.git"
+    "url": "https://github.com/strakzat/orbit.git"
   }
 }

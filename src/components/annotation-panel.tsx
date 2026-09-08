@@ -24,19 +24,6 @@ const ALL_TYPES: AnnotationType[] = [
 ];
 const ALL_STATUSES: Comment["status"][] = ["Open", "In behandeling", "Opgelost"];
 
-function formatShortDate(value: string): string {
-  try {
-    return new Date(value).toLocaleDateString("nl-NL", {
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return value;
-  }
-}
-
 export function AnnotationPanel() {
   useAnnotationStyles();
 
@@ -69,7 +56,7 @@ export function AnnotationPanel() {
   const panelRef = useRef<HTMLDivElement>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const activeCardRef = useRef<HTMLDivElement>(null);
-  const searchId = useStableId("szan-search");
+  const searchId = useStableId("orbit-search");
 
   const { panelWidth, panelHeight } = settings;
 
@@ -176,11 +163,11 @@ export function AnnotationPanel() {
   // navigation, and we would be claiming a keyboard contract we do not implement.
   const header = React.createElement(
     "div",
-    { className: "szan-panel__header" },
+    { className: "orbit-panel__header" },
     React.createElement(
       "div",
       {
-        className: "szan-panel__grip",
+        className: "orbit-panel__grip",
         onMouseDown: handleMouseDown,
         // Drag-to-corner is a mouse convenience; the position is remembered anyway.
         "aria-hidden": true,
@@ -189,14 +176,14 @@ export function AnnotationPanel() {
     ),
     React.createElement(
       "div",
-      { className: "szan-tabs" },
+      { className: "orbit-tabs" },
       ...(["annotations", "feedback"] as const).map((v) =>
         React.createElement(
           "button",
           {
             key: v,
             type: "button",
-            className: cx("szan-tab", view === v && "szan-tab--active"),
+            className: cx("orbit-tab", view === v && "orbit-tab--active"),
             onClick: () => setView(v),
             "aria-pressed": view === v,
           },
@@ -204,7 +191,7 @@ export function AnnotationPanel() {
           // Both counters are page-filtered, so the two tabs answer the same
           // question: how much is there to look at right here.
           tabCounts[v] > 0 &&
-            React.createElement("span", { className: "szan-count" }, tabCounts[v])
+            React.createElement("span", { className: "orbit-count" }, tabCounts[v])
         )
       )
     ),
@@ -212,7 +199,7 @@ export function AnnotationPanel() {
       "button",
       {
         type: "button",
-        className: "szan-icon-button",
+        className: "orbit-icon-button",
         onClick: close,
         "aria-label": "Sluit paneel",
       },
@@ -222,7 +209,7 @@ export function AnnotationPanel() {
 
   const subTabs = React.createElement(
     "div",
-    { className: "szan-subtabs" },
+    { className: "orbit-subtabs" },
     ...[
       {
         key: "page" as const,
@@ -246,32 +233,32 @@ export function AnnotationPanel() {
         {
           key: t.key,
           type: "button",
-          className: cx("szan-subtab", tab === t.key && "szan-subtab--active"),
+          className: cx("orbit-subtab", tab === t.key && "orbit-subtab--active"),
           onClick: () => setTab(t.key),
           "aria-pressed": tab === t.key,
         },
         t.label,
-        React.createElement("span", { className: "szan-subtab__count" }, t.count)
+        React.createElement("span", { className: "orbit-subtab__count" }, t.count)
       )
     )
   );
 
   const search = React.createElement(
     "div",
-    { className: "szan-search" },
+    { className: "orbit-search" },
     React.createElement(
       "label",
-      { className: "szan-sr-only", htmlFor: searchId },
+      { className: "orbit-sr-only", htmlFor: searchId },
       view === "feedback" ? "Zoek feedback" : labels.searchPlaceholder
     ),
     React.createElement(
       "span",
-      { className: "szan-search__icon" },
+      { className: "orbit-search__icon" },
       React.createElement(SearchIcon, { size: 14 })
     ),
     React.createElement("input", {
       id: searchId,
-      className: "szan-input",
+      className: "orbit-input",
       type: "search",
       placeholder: view === "feedback" ? "Zoek feedback..." : labels.searchPlaceholder,
       value: searchQuery,
@@ -281,7 +268,7 @@ export function AnnotationPanel() {
 
   const filters = React.createElement(
     "div",
-    { className: "szan-filters" },
+    { className: "orbit-filters" },
     ...(view === "annotations"
       ? ALL_TYPES.map((t) => {
           const isOn = typeFilter.has(t);
@@ -291,8 +278,8 @@ export function AnnotationPanel() {
             {
               key: t,
               type: "button",
-              className: cx("szan-filter", isOn && "szan-filter--active"),
-              "data-szan-type": t,
+              className: cx("orbit-filter", isOn && "orbit-filter--active"),
+              "data-orbit-type": t,
               "aria-pressed": isOn,
               onClick: () =>
                 setTypeFilter((prev) => {
@@ -313,8 +300,8 @@ export function AnnotationPanel() {
             {
               key: s,
               type: "button",
-              className: cx("szan-filter", isOn && "szan-filter--active"),
-              "data-szan-status": STATUS_SLUGS[s],
+              className: cx("orbit-filter", isOn && "orbit-filter--active"),
+              "data-orbit-status": STATUS_SLUGS[s],
               "aria-pressed": isOn,
               onClick: () =>
                 setStatusFilter((prev) => {
@@ -332,9 +319,9 @@ export function AnnotationPanel() {
 
   const annotationList = React.createElement(
     "div",
-    { className: "szan-list" },
+    { className: "orbit-list" },
     filtered.length === 0
-      ? React.createElement("p", { className: "szan-empty", role: "status" }, labels.noResults)
+      ? React.createElement("p", { className: "orbit-empty", role: "status" }, labels.noResults)
       : filtered.map((annotation) =>
           React.createElement(
             "div",
@@ -387,12 +374,12 @@ export function AnnotationPanel() {
 
   const feedbackList = React.createElement(
     "div",
-    { className: "szan-list szan-list--comments" },
+    { className: "orbit-list orbit-list--comments" },
     feedbackEmpty
       ? React.createElement(
           "p",
           {
-            className: cx("szan-empty", feedbackEmpty.isError && "szan-empty--error"),
+            className: cx("orbit-empty", feedbackEmpty.isError && "orbit-empty--error"),
             role: feedbackEmpty.isError ? "alert" : "status",
           },
           feedbackEmpty.message
@@ -428,15 +415,15 @@ export function AnnotationPanel() {
                 }
               : undefined,
             onMouseLeave: removeHoverHighlight,
-            footer: React.createElement(
-              "div",
-              { className: "szan-comment__foot" },
-              c.pagina
-                ? React.createElement(
+            footer: c.pagina
+              ? React.createElement(
+                  "div",
+                  { className: "orbit-comment__foot" },
+                  React.createElement(
                     "button",
                     {
                       type: "button",
-                      className: "szan-link",
+                      className: "orbit-link",
                       onClick: (e: React.MouseEvent) => {
                         e.stopPropagation();
                         navigateTo(c.pagina!);
@@ -444,13 +431,8 @@ export function AnnotationPanel() {
                     },
                     routeBreadcrumb(c.pagina)
                   )
-                : React.createElement("span", null),
-              React.createElement(
-                "span",
-                { className: "szan-meta" },
-                formatShortDate(c.aangemaakt)
-              )
-            ),
+                )
+              : undefined,
           })
         )
   );
@@ -460,10 +442,10 @@ export function AnnotationPanel() {
     {
       ref: panelRef,
       className: cx(
-        "szan-root",
-        "szan-panel",
-        "szan-animate-in",
-        isDragging && "szan-panel--dragging"
+        "orbit-root",
+        "orbit-panel",
+        "orbit-animate-in",
+        isDragging && "orbit-panel--dragging"
       ),
       style: {
         ...getCornerPosition(panelCorner, panelWidth, panelHeight),

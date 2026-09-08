@@ -3,21 +3,23 @@
  *
  * The naming mirrors the Untitled UI semantic layer (`bg-primary`, `text-tertiary`,
  * `border-brand`, `*_hover`, `*_on-brand`) so the vocabulary matches the rest of our
- * projects, even though this package ships plain CSS instead of Tailwind.
+ * projects, even though this package ships plain CSS instead of Tailwind. The *values*
+ * are Geist — Vercel's near-monochrome palette: white/near-black surfaces, hairline
+ * borders, one blue reserved for interaction, and a big soft popover shadow.
  *
- * Every variable is prefixed `--szan-` and lives on `:root`. They are a public API:
+ * Every variable is prefixed `--orbit-` and lives on `:root`. They are a public API:
  * a consuming project may override any of them. Renaming one is a breaking change.
  *
- * Dark mode follows `prefers-color-scheme`, with `[data-szan-theme="light" | "dark"]`
+ * Dark mode follows `prefers-color-scheme`, with `[data-orbit-theme="light" | "dark"]`
  * on `<html>` as a manual override.
  */
 
 import type { AnnotationType, Comment } from "../types";
 
-export const PREFIX = "szan";
-export const THEME_ATTR = "data-szan-theme";
+export const PREFIX = "orbit";
+export const THEME_ATTR = "data-orbit-theme";
 
-/** Slug used in `data-szan-status`, because the status values contain spaces. */
+/** Slug used in `data-orbit-status`, because the status values contain spaces. */
 export const STATUS_SLUGS: Record<Comment["status"], string> = {
   "Open": "open",
   "In behandeling": "pending",
@@ -40,253 +42,255 @@ type Vars = Record<string, string>;
 
 const LIGHT: Vars = {
   // Surfaces
-  "--szan-bg-primary": "#FFFFFF",
-  "--szan-bg-primary_hover": "#F9FAFB",
-  "--szan-bg-secondary": "#F9FAFB",
-  "--szan-bg-secondary_hover": "#F2F4F7",
-  "--szan-bg-tertiary": "#F2F4F7",
-  "--szan-bg-quaternary": "#EAECF0",
-  "--szan-bg-disabled": "#F2F4F7",
+  "--orbit-bg-primary": "#FFFFFF",
+  "--orbit-bg-primary_hover": "#FAFAFA",
+  "--orbit-bg-secondary": "#FAFAFA",
+  "--orbit-bg-secondary_hover": "#F2F2F2",
+  "--orbit-bg-tertiary": "#F2F2F2",
+  "--orbit-bg-quaternary": "#EBEBEB",
+  "--orbit-bg-disabled": "#FAFAFA",
 
-  // Foreground
-  "--szan-text-primary": "#101828",
-  "--szan-text-secondary": "#344054",
-  "--szan-text-tertiary": "#475467",
-  // 4.97:1 on bg-primary. The old muted grey (#98A2B3) sat at 2.58:1 and carried
-  // real content — timestamps, authors, breadcrumbs — so it failed WCAG 1.4.3.
-  "--szan-text-quaternary": "#667085",
-  "--szan-text-disabled": "#98A2B3",
+  // Foreground. Content greys stay >= 4.5:1 on bg-primary — timestamps, authors and
+  // breadcrumbs are real text, not decoration, so they clear WCAG 1.4.3.
+  "--orbit-text-primary": "#171717",
+  "--orbit-text-secondary": "#525252", // 8.0:1
+  "--orbit-text-tertiary": "#666666",  // 5.7:1
+  "--orbit-text-quaternary": "#737373", // 4.74:1 — the muted grey, still readable
+  "--orbit-text-disabled": "#A1A1A1",   // decorative only
 
-  // Structure
-  "--szan-border-primary": "#D0D5DD",
-  "--szan-border-secondary": "#EAECF0",
-  // Untitled UI's own field border. It is 1.6:1, below what WCAG 1.4.11 asks of
-  // a control whose only boundary is that line — the focus ring below carries
-  // the weight instead. Override this token to darken it.
-  "--szan-border-input": "#D0D5DD",
+  // Structure — Geist hairlines
+  "--orbit-border-primary": "#E5E5E5",
+  "--orbit-border-secondary": "#EDEDED",
+  // Vercel's input border is a hairline that does not, on its own, clear the 3:1 of
+  // WCAG 1.4.11; the 2px focus ring below carries the weight. Override to darken it.
+  "--orbit-border-input": "#E0E0E0",
 
-  // Focus — 4.58:1 on bg-primary, 4.40:1 on bg-secondary
-  "--szan-outline-focus-ring": "#1570EF",
+  // Focus — the Vercel blue, 2px ring
+  "--orbit-outline-focus-ring": "#0070F3",
 
   // Statuses
-  "--szan-bg-error-primary": "#FEF3F2",
-  "--szan-border-error": "#FECDCA",
-  "--szan-text-error-primary": "#B42318",
-  "--szan-bg-warning-primary": "#FFF6ED",
-  "--szan-border-warning": "#F9DBAF",
-  "--szan-text-warning-primary": "#B93815",
-  "--szan-bg-success-primary": "#ECFDF3",
-  "--szan-border-success": "#ABEFC6",
-  "--szan-text-success-primary": "#067647",
+  "--orbit-bg-error-primary": "#FEECEB",
+  "--orbit-border-error": "#F5C4C0",
+  "--orbit-text-error-primary": "#C4342B",
+  "--orbit-bg-warning-primary": "#FFF7E6",
+  "--orbit-border-warning": "#F5D98A",
+  "--orbit-text-warning-primary": "#946200",
+  "--orbit-bg-success-primary": "#E8F6EE",
+  "--orbit-border-success": "#A9DEBE",
+  "--orbit-text-success-primary": "#0F7A3D",
 
   // Feedback accent — the blue the inspector and comment badges share
-  "--szan-bg-feedback": "#EFF8FF",
-  "--szan-border-feedback": "#B2DDFF",
-  "--szan-text-feedback": "#175CD3",
-  "--szan-bg-feedback-solid": "#175CD3",
-  "--szan-text-feedback_on-solid": "#FFFFFF",
+  "--orbit-bg-feedback": "#EDF4FF",
+  "--orbit-border-feedback": "#B3D3FF",
+  "--orbit-text-feedback": "#0060D1",
+  "--orbit-bg-feedback-solid": "#0070F3",
+  "--orbit-text-feedback_on-solid": "#FFFFFF",
 
   // Fills for the boxes drawn over host elements while pointing at them
-  "--szan-overlay-fill": "rgba(21, 112, 239, 0.06)",
-  "--szan-overlay-fill-strong": "rgba(21, 112, 239, 0.10)",
-  "--szan-overlay-ring": "rgba(21, 112, 239, 0.16)",
+  "--orbit-overlay-fill": "rgba(0, 112, 243, 0.05)",
+  "--orbit-overlay-fill-strong": "rgba(0, 112, 243, 0.09)",
+  "--orbit-overlay-ring": "rgba(0, 112, 243, 0.20)",
 
-  // Annotation types
-  "--szan-type-documentation-bg": "#F5F5F5",
-  "--szan-type-documentation-border": "#D0D5DD",
-  "--szan-type-documentation-fg": "#344054",
-  "--szan-type-pro-bg": "#ECFDF3",
-  "--szan-type-pro-border": "#ABEFC6",
-  "--szan-type-pro-fg": "#067647",
-  "--szan-type-question-bg": "#EFF8FF",
-  "--szan-type-question-border": "#B2DDFF",
-  "--szan-type-question-fg": "#175CD3",
-  "--szan-type-con-bg": "#FEF3F2",
-  "--szan-type-con-border": "#FECDCA",
-  "--szan-type-con-fg": "#B42318",
-  "--szan-type-suggestion-bg": "#F4F3FF",
-  "--szan-type-suggestion-border": "#D9D6FE",
-  "--szan-type-suggestion-fg": "#5925DC",
-  "--szan-type-critical-bg": "#FFF4ED",
-  "--szan-type-critical-border": "#F9DBAF",
-  "--szan-type-critical-fg": "#B93815",
-  "--szan-type-user-insight-bg": "#FDF2FA",
-  "--szan-type-user-insight-border": "#FCCEEE",
-  "--szan-type-user-insight-fg": "#C11574",
+  // Annotation types — kept colour-coded (icon + text carry the meaning too), toned
+  // to sit quietly next to the monochrome chrome.
+  "--orbit-type-documentation-bg": "#F4F4F4",
+  "--orbit-type-documentation-border": "#E0E0E0",
+  "--orbit-type-documentation-fg": "#525252",
+  "--orbit-type-pro-bg": "#E8F6EE",
+  "--orbit-type-pro-border": "#A9DEBE",
+  "--orbit-type-pro-fg": "#0F7A3D",
+  "--orbit-type-question-bg": "#EDF4FF",
+  "--orbit-type-question-border": "#B3D3FF",
+  "--orbit-type-question-fg": "#0060D1",
+  "--orbit-type-con-bg": "#FEECEB",
+  "--orbit-type-con-border": "#F5C4C0",
+  "--orbit-type-con-fg": "#C4342B",
+  "--orbit-type-suggestion-bg": "#F1EEFE",
+  "--orbit-type-suggestion-border": "#D3C9FB",
+  "--orbit-type-suggestion-fg": "#6941C6",
+  "--orbit-type-critical-bg": "#FFF1E8",
+  "--orbit-type-critical-border": "#F7C9A4",
+  "--orbit-type-critical-fg": "#B54708",
+  "--orbit-type-user-insight-bg": "#FDEEF7",
+  "--orbit-type-user-insight-border": "#F6C2E0",
+  "--orbit-type-user-insight-fg": "#B12379",
 
-  // Elevation
-  "--szan-shadow-xs": "0 1px 2px 0 rgba(16, 24, 40, 0.05)",
-  "--szan-shadow-sm":
-    "0 1px 3px 0 rgba(16, 24, 40, 0.10), 0 1px 2px -1px rgba(16, 24, 40, 0.06)",
-  "--szan-shadow-md":
-    "0 4px 8px -2px rgba(16, 24, 40, 0.10), 0 2px 4px -2px rgba(16, 24, 40, 0.06)",
-  "--szan-shadow-lg":
-    "0 12px 16px -4px rgba(16, 24, 40, 0.08), 0 4px 6px -2px rgba(16, 24, 40, 0.03)",
-  "--szan-shadow-xl":
-    "0 20px 24px -4px rgba(16, 24, 40, 0.08), 0 8px 8px -4px rgba(16, 24, 40, 0.03)",
-  "--szan-shadow-border":
-    "0 0 0 1px rgba(16, 24, 40, 0.06), 0 1px 2px -1px rgba(16, 24, 40, 0.06), 0 2px 4px 0 rgba(16, 24, 40, 0.04)",
+  // Elevation — Vercel's soft, wide shadow, always over a hairline ring
+  "--orbit-shadow-xs": "0 1px 2px 0 rgba(0, 0, 0, 0.04)",
+  "--orbit-shadow-sm":
+    "0 1px 2px 0 rgba(0, 0, 0, 0.06), 0 1px 1px 0 rgba(0, 0, 0, 0.04)",
+  "--orbit-shadow-md":
+    "0 2px 8px -1px rgba(0, 0, 0, 0.08), 0 1px 3px -1px rgba(0, 0, 0, 0.06)",
+  "--orbit-shadow-lg":
+    "0 8px 30px -4px rgba(0, 0, 0, 0.12), 0 2px 6px -2px rgba(0, 0, 0, 0.06)",
+  "--orbit-shadow-xl":
+    "0 12px 40px -6px rgba(0, 0, 0, 0.16), 0 4px 10px -4px rgba(0, 0, 0, 0.08)",
+  "--orbit-shadow-border": "0 0 0 1px rgba(0, 0, 0, 0.08)",
 };
 
 // ── Dark ─────────────────────────────────────────────────────────────────────
 
 const DARK: Vars = {
-  "--szan-bg-primary": "#0C111D",
-  "--szan-bg-primary_hover": "#1F242F",
-  "--szan-bg-secondary": "#161B26",
-  "--szan-bg-secondary_hover": "#1F242F",
-  "--szan-bg-tertiary": "#1F242F",
-  "--szan-bg-quaternary": "#333741",
-  "--szan-bg-disabled": "#1F242F",
+  "--orbit-bg-primary": "#0A0A0A",
+  "--orbit-bg-primary_hover": "#1A1A1A",
+  "--orbit-bg-secondary": "#000000",
+  "--orbit-bg-secondary_hover": "#1A1A1A",
+  "--orbit-bg-tertiary": "#1F1F1F",
+  "--orbit-bg-quaternary": "#2E2E2E",
+  "--orbit-bg-disabled": "#1A1A1A",
 
-  "--szan-text-primary": "#F5F5F6",
-  "--szan-text-secondary": "#CECFD2",
-  "--szan-text-tertiary": "#94969C",
-  "--szan-text-quaternary": "#94969C",
-  "--szan-text-disabled": "#85888E",
+  "--orbit-text-primary": "#EDEDED",
+  "--orbit-text-secondary": "#A1A1A1",
+  "--orbit-text-tertiary": "#8F8F8F",
+  "--orbit-text-quaternary": "#8F8F8F",
+  "--orbit-text-disabled": "#666666",
 
-  "--szan-border-primary": "#333741",
-  "--szan-border-secondary": "#1F242F",
-  "--szan-border-input": "#333741",
+  "--orbit-border-primary": "#2E2E2E",
+  "--orbit-border-secondary": "#1F1F1F",
+  "--orbit-border-input": "#333333",
 
-  "--szan-outline-focus-ring": "#84CAFF",
+  "--orbit-outline-focus-ring": "#3B9EFF",
 
-  "--szan-bg-error-primary": "#55160C",
-  "--szan-border-error": "#912018",
-  "--szan-text-error-primary": "#FDA29B",
-  "--szan-bg-warning-primary": "#4E1D09",
-  "--szan-border-warning": "#93370D",
-  "--szan-text-warning-primary": "#FEC84B",
-  "--szan-bg-success-primary": "#053321",
-  "--szan-border-success": "#085D3A",
-  "--szan-text-success-primary": "#75E0A7",
+  "--orbit-bg-error-primary": "#2A1210",
+  "--orbit-border-error": "#7A2420",
+  "--orbit-text-error-primary": "#FF6166",
+  "--orbit-bg-warning-primary": "#241A02",
+  "--orbit-border-warning": "#6B4E07",
+  "--orbit-text-warning-primary": "#F5C13B",
+  "--orbit-bg-success-primary": "#08210F",
+  "--orbit-border-success": "#12572B",
+  "--orbit-text-success-primary": "#5FD08A",
 
-  "--szan-bg-feedback": "#102A56",
-  "--szan-border-feedback": "#1849A9",
-  "--szan-text-feedback": "#84CAFF",
-  "--szan-bg-feedback-solid": "#1570EF",
-  "--szan-text-feedback_on-solid": "#FFFFFF",
+  "--orbit-bg-feedback": "#0A1B33",
+  "--orbit-border-feedback": "#17417A",
+  "--orbit-text-feedback": "#5EA8FF",
+  "--orbit-bg-feedback-solid": "#0070F3",
+  "--orbit-text-feedback_on-solid": "#FFFFFF",
 
-  "--szan-overlay-fill": "rgba(132, 202, 255, 0.10)",
-  "--szan-overlay-fill-strong": "rgba(132, 202, 255, 0.16)",
-  "--szan-overlay-ring": "rgba(132, 202, 255, 0.22)",
+  "--orbit-overlay-fill": "rgba(94, 168, 255, 0.10)",
+  "--orbit-overlay-fill-strong": "rgba(94, 168, 255, 0.16)",
+  "--orbit-overlay-ring": "rgba(94, 168, 255, 0.28)",
 
-  "--szan-type-documentation-bg": "#1F242F",
-  "--szan-type-documentation-border": "#333741",
-  "--szan-type-documentation-fg": "#CECFD2",
-  "--szan-type-pro-bg": "#053321",
-  "--szan-type-pro-border": "#085D3A",
-  "--szan-type-pro-fg": "#75E0A7",
-  "--szan-type-question-bg": "#102A56",
-  "--szan-type-question-border": "#1849A9",
-  "--szan-type-question-fg": "#84CAFF",
-  "--szan-type-con-bg": "#55160C",
-  "--szan-type-con-border": "#912018",
-  "--szan-type-con-fg": "#FDA29B",
-  "--szan-type-suggestion-bg": "#2E125E",
-  "--szan-type-suggestion-border": "#5925DC",
-  "--szan-type-suggestion-fg": "#BDB4FE",
-  "--szan-type-critical-bg": "#4E1D09",
-  "--szan-type-critical-border": "#932F19",
-  "--szan-type-critical-fg": "#F7B27A",
-  "--szan-type-user-insight-bg": "#4E0D30",
-  "--szan-type-user-insight-border": "#9E165F",
-  "--szan-type-user-insight-fg": "#FAA7E0",
+  "--orbit-type-documentation-bg": "#1F1F1F",
+  "--orbit-type-documentation-border": "#2E2E2E",
+  "--orbit-type-documentation-fg": "#B4B4B4",
+  "--orbit-type-pro-bg": "#08210F",
+  "--orbit-type-pro-border": "#12572B",
+  "--orbit-type-pro-fg": "#5FD08A",
+  "--orbit-type-question-bg": "#0A1B33",
+  "--orbit-type-question-border": "#17417A",
+  "--orbit-type-question-fg": "#5EA8FF",
+  "--orbit-type-con-bg": "#2A1210",
+  "--orbit-type-con-border": "#7A2420",
+  "--orbit-type-con-fg": "#FF6166",
+  "--orbit-type-suggestion-bg": "#1A1233",
+  "--orbit-type-suggestion-border": "#3B2A73",
+  "--orbit-type-suggestion-fg": "#B39DFF",
+  "--orbit-type-critical-bg": "#241402",
+  "--orbit-type-critical-border": "#6B3D07",
+  "--orbit-type-critical-fg": "#F5A15B",
+  "--orbit-type-user-insight-bg": "#2A0E20",
+  "--orbit-type-user-insight-border": "#722052",
+  "--orbit-type-user-insight-fg": "#F09BD0",
 
-  // Shadows read as noise on a dark surface; a ring carries the elevation instead.
-  "--szan-shadow-xs": "0 0 0 1px rgba(255, 255, 255, 0.06)",
-  "--szan-shadow-sm":
-    "0 0 0 1px rgba(255, 255, 255, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.40)",
-  "--szan-shadow-md":
-    "0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 8px -2px rgba(0, 0, 0, 0.50)",
-  "--szan-shadow-lg":
-    "0 0 0 1px rgba(255, 255, 255, 0.08), 0 12px 16px -4px rgba(0, 0, 0, 0.55)",
-  "--szan-shadow-xl":
-    "0 0 0 1px rgba(255, 255, 255, 0.10), 0 20px 24px -4px rgba(0, 0, 0, 0.60)",
-  "--szan-shadow-border": "0 0 0 1px rgba(255, 255, 255, 0.08)",
+  // A ring reads the elevation on a dark surface; the drop shadow only deepens it.
+  "--orbit-shadow-xs": "0 0 0 1px rgba(255, 255, 255, 0.06)",
+  "--orbit-shadow-sm":
+    "0 0 0 1px rgba(255, 255, 255, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.50)",
+  "--orbit-shadow-md":
+    "0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.55)",
+  "--orbit-shadow-lg":
+    "0 0 0 1px rgba(255, 255, 255, 0.08), 0 12px 34px -6px rgba(0, 0, 0, 0.65)",
+  "--orbit-shadow-xl":
+    "0 0 0 1px rgba(255, 255, 255, 0.10), 0 20px 48px -8px rgba(0, 0, 0, 0.70)",
+  "--orbit-shadow-border": "0 0 0 1px rgba(255, 255, 255, 0.08)",
 };
 
-// Brand tokens are derived from a single `--szan-brand`, so a consumer only has to
-// set one colour. The static declaration before each color-mix() is the fallback
-// for browsers without it.
+// The solid brand surface is Vercel's primary button: pure high-contrast, inverted
+// per theme (near-black on light, near-white on dark). It is deliberately *not*
+// derived from `--orbit-brand`, so it stays legible in both themes whatever accent a
+// consumer sets. `--orbit-brand` (from settings.accentColor) still tints the quiet
+// brand tokens below — subtle fill, border, secondary text.
 const BRAND_LIGHT = `
-  --szan-brand: #344054;
-  --szan-bg-brand-solid: var(--szan-brand);
-  --szan-bg-brand-solid_hover: #101828;
-  --szan-bg-brand-solid_hover: color-mix(in oklab, var(--szan-brand), black 14%);
-  --szan-bg-brand-primary: #F2F4F7;
-  --szan-bg-brand-primary: color-mix(in oklab, var(--szan-brand), white 92%);
-  --szan-border-brand: var(--szan-brand);
-  --szan-text-brand-secondary: var(--szan-brand);
-  --szan-text-primary_on-brand: #FFFFFF;
+  --orbit-brand: #171717;
+  --orbit-bg-brand-solid: #171717;
+  --orbit-bg-brand-solid_hover: #000000;
+  --orbit-bg-brand-primary: #F2F2F2;
+  --orbit-bg-brand-primary: color-mix(in oklab, var(--orbit-brand), white 92%);
+  --orbit-border-brand: var(--orbit-brand);
+  --orbit-text-brand-secondary: var(--orbit-brand);
+  --orbit-text-primary_on-brand: #FFFFFF;
 `;
 
 const BRAND_DARK = `
-  --szan-bg-brand-solid: var(--szan-brand);
-  --szan-bg-brand-solid_hover: #475467;
-  --szan-bg-brand-solid_hover: color-mix(in oklab, var(--szan-brand), white 14%);
-  --szan-bg-brand-primary: #1F242F;
-  --szan-bg-brand-primary: color-mix(in oklab, var(--szan-brand), black 72%);
-  --szan-border-brand: #667085;
-  --szan-border-brand: color-mix(in oklab, var(--szan-brand), white 45%);
-  --szan-text-brand-secondary: #98A2B3;
-  --szan-text-brand-secondary: color-mix(in oklab, var(--szan-brand), white 58%);
+  --orbit-bg-brand-solid: #EDEDED;
+  --orbit-bg-brand-solid_hover: #FFFFFF;
+  --orbit-bg-brand-primary: #1F1F1F;
+  --orbit-bg-brand-primary: color-mix(in oklab, var(--orbit-brand), black 78%);
+  --orbit-border-brand: #8F8F8F;
+  --orbit-border-brand: color-mix(in oklab, var(--orbit-brand), white 45%);
+  --orbit-text-brand-secondary: #B4B4B4;
+  --orbit-text-brand-secondary: color-mix(in oklab, var(--orbit-brand), white 58%);
+  --orbit-text-primary_on-brand: #0A0A0A;
 `;
 
 // ── Scales ───────────────────────────────────────────────────────────────────
 
 // Theme-independent, so they are declared once.
 const SCALES = `
-  --szan-space-0-5: 2px;
-  --szan-space-1: 4px;
-  --szan-space-1-5: 6px;
-  --szan-space-2: 8px;
-  --szan-space-2-5: 10px;
-  --szan-space-3: 12px;
-  --szan-space-4: 16px;
-  --szan-space-5: 20px;
-  --szan-space-6: 24px;
-  --szan-space-8: 32px;
+  --orbit-space-0-5: 2px;
+  --orbit-space-1: 4px;
+  --orbit-space-1-5: 6px;
+  --orbit-space-2: 8px;
+  --orbit-space-2-5: 10px;
+  --orbit-space-3: 12px;
+  --orbit-space-4: 16px;
+  --orbit-space-5: 20px;
+  --orbit-space-6: 24px;
+  --orbit-space-8: 32px;
 
-  --szan-radius-xs: 2px;
-  --szan-radius-sm: 4px;
-  --szan-radius-md: 6px;
-  --szan-radius-lg: 10px;
-  --szan-radius-xl: 12px;
-  --szan-radius-2xl: 16px;
-  --szan-radius-full: 9999px;
+  --orbit-radius-xs: 4px;
+  --orbit-radius-sm: 5px;
+  --orbit-radius-md: 6px;
+  --orbit-radius-lg: 8px;
+  --orbit-radius-xl: 10px;
+  --orbit-radius-2xl: 12px;
+  --orbit-radius-full: 9999px;
 
-  --szan-font-body: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
-  --szan-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-    "Liberation Mono", monospace;
+  /* Geist first — used when the consuming app has loaded it — then the system stack. */
+  --orbit-font-body: "Geist", "Geist Sans", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --orbit-font-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+    Consolas, "Liberation Mono", monospace;
 
-  --szan-text-2xs: 11px;
-  --szan-text-xs: 12px;
-  --szan-text-sm: 13px;
-  --szan-text-md: 14px;
-  --szan-text-lg: 18px;
+  --orbit-text-2xs: 11px;
+  --orbit-text-xs: 12px;
+  --orbit-text-sm: 13px;
+  --orbit-text-md: 14px;
+  --orbit-text-lg: 18px;
 
-  --szan-leading-none: 1;
-  --szan-leading-snug: 1.4;
-  --szan-leading-normal: 1.5;
+  --orbit-leading-none: 1;
+  --orbit-leading-snug: 1.4;
+  --orbit-leading-normal: 1.5;
 
-  --szan-duration-fast: 100ms;
-  --szan-duration: 150ms;
-  --szan-duration-slow: 200ms;
-  --szan-ease: cubic-bezier(0.2, 0, 0, 1);
+  --orbit-duration-fast: 100ms;
+  --orbit-duration: 150ms;
+  --orbit-duration-slow: 200ms;
+  --orbit-ease: cubic-bezier(0.2, 0, 0, 1);
 
   /* Base is rewritten at runtime from settings.zIndex; the rest are offsets on it. */
-  --szan-z-base: 9000;
+  --orbit-z-base: 9000;
   /* The inspector toggle sits below the panel, so the panel can cover it. */
-  --szan-z-inspector-toggle: 10;
-  --szan-z-badge-feedback: 19;
-  --szan-z-badge: 20;
-  --szan-z-popover: 30;
-  --szan-z-overlay: 40;
-  --szan-z-highlight: 45;
-  --szan-z-inspector-popover: 50;
-  --szan-z-toolbar: 999;
+  --orbit-z-inspector-toggle: 10;
+  --orbit-z-badge-feedback: 19;
+  --orbit-z-badge: 20;
+  --orbit-z-overlay: 40;
+  --orbit-z-highlight: 45;
+  --orbit-z-toolbar: 999;
+  /* Popovers are the modal layer: they sit above the panel, so opening one next to
+     an element the panel overlaps is never hidden behind it. */
+  --orbit-z-popover: 1000;
+  --orbit-z-inspector-popover: 1010;
 `;
 
 function declarations(vars: Vars): string {
