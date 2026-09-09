@@ -12,14 +12,29 @@ export interface FeedbackCommit {
 }
 
 /**
+ * Resolves `base` to a ref that actually exists in this checkout. A CI checkout
+ * of just the feedback branch has no local `main` — only `origin/main` — so
+ * `main..HEAD` is an ambiguous argument. Prefer `origin/<base>`, fall back to the
+ * bare name for local runs. Never returns a name that doesn't resolve to a commit.
+ */
+export function resolveBaseRef(base: string): string {
+  for (const ref of [`origin/${base}`, base]) {
+    const r = tryRun("git", ["rev-parse", "--verify", "--quiet", `${ref}^{commit}`]);
+    if (r.ok && r.stdout) return ref;
+  }
+  return base;
+}
+
+/**
  * Lists commits on the current branch since `base`, tagged with their Orbit
  * feedback trailers. Newest first.
  */
 export function listFeedbackCommits(base: string): FeedbackCommit[] {
+  const baseRef = resolveBaseRef(base);
   // %H hash, %x00 NUL, %s subject, %x00 NUL, %b body, %x1e record separator.
   const raw = run("git", [
     "log",
-    `${base}..HEAD`,
+    `${baseRef}..HEAD`,
     "--format=%H%x00%s%x00%b%x1e",
   ]);
   if (!raw) return [];

@@ -271,9 +271,29 @@ This copies a Claude Code skill and two GitHub workflows into the project. Then 
   project's Notion page id — the same relation target the comments API uses), and
   `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`). Optional `ORBIT_GH_TOKEN`
   (a PAT) if you want CI to run on the feedback PR.
+- **Package access**: `npm ci` installs `@strakzat/orbit` from GitHub Packages.
+  The workflow's `GITHUB_TOKEN` can read it only if this repo has access to the
+  package — set the package to **Internal** visibility, or add the repo under the
+  package's **Manage Actions access**. If neither is possible (e.g. a different
+  org), set `ORBIT_NPM_TOKEN` to a PAT with `read:packages`; the workflows prefer
+  it over `GITHUB_TOKEN`.
+- **PR creation**: the workflow opens a pull request, which GitHub blocks by
+  default. Enable **Allow GitHub Actions to create and approve pull requests**
+  under Settings → Actions → General → Workflow permissions (this may also be
+  gated at the org level). Alternatively set `ORBIT_GH_TOKEN` to a PAT; the
+  workflows use it instead of `GITHUB_TOKEN`.
+
+The `orbit-feedback` label is created automatically on the first run, so you don't
+need to add it by hand. Run `npx orbit-feedback init --check` to verify the Notion
+schema and that PR creation is allowed.
 
 The scheduled run fires on weekdays at 18:00 Amsterdam time; start it by hand from
 the Actions tab ("Orbit feedback" → Run workflow).
+
+Each run uploads its `.orbit/` folder (manifest, results, PR body) as an artifact,
+so you can read why a point was skipped even though the AI step hides its output.
+If the AI skips every point, no PR is opened and each point is released back to
+`Open` with its skip reason.
 
 ### Run it locally
 
