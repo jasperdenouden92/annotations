@@ -271,6 +271,15 @@ This copies a Claude Code skill and two GitHub workflows into the project. Then 
   project's Notion page id — the same relation target the comments API uses), and
   `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`). Optional `ORBIT_GH_TOKEN`
   (a PAT) if you want CI to run on the feedback PR.
+- **Package access**: `npm ci` installs `@strakzat/orbit` from GitHub Packages.
+  The workflow's `GITHUB_TOKEN` can read it only if this repo has access to the
+  package — set the package to **Internal** visibility, or add the repo under the
+  package's **Manage Actions access**. If neither is possible (e.g. a different
+  org), set `ORBIT_NPM_TOKEN` to a PAT with `read:packages`; the workflows prefer
+  it over `GITHUB_TOKEN`.
+
+The `orbit-feedback` label is created automatically on the first run, so you don't
+need to add it by hand.
 
 The scheduled run fires on weekdays at 18:00 Amsterdam time; start it by hand from
 the Actions tab ("Orbit feedback" → Run workflow).

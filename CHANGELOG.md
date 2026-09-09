@@ -1,5 +1,27 @@
 # Changelog
 
+## 3.1.1
+
+### Fixed
+
+`orbit-feedback init` templates, from bugs hit on a fresh setup in a Next.js
+client project:
+
+- **`npm ci` 401/403.** Both workflows only set `NODE_AUTH_TOKEN`, so a project
+  `.npmrc` that authenticates `npm.pkg.github.com` via `${NPM_TOKEN}` got an empty
+  token. The install step now also sets `NPM_TOKEN`. Documented that `GITHUB_TOKEN`
+  only works when the repo has read access to the package (package "Manage Actions
+  access" / Internal visibility); otherwise `ORBIT_NPM_TOKEN` (a PAT with
+  `read:packages`) is required.
+- **`git push` "Invalid username or token".** `anthropics/claude-code-action`
+  mints its own GitHub App token via OIDC and revokes it when its step ends, so
+  the following push failed. The action is now passed an explicit `github_token`.
+- **`gh pr create` "label 'orbit-feedback' not found".** The label is now created
+  idempotently (`gh label create ... --force`) before the PR is opened.
+- **Re-run on the same day.** A leftover `feedback/<date>` branch from a failed
+  run blocked the push; it is now pushed with `--force-with-lease` on that
+  bot-owned branch.
+
 ## 3.1.0
 
 ### Added

@@ -43,7 +43,10 @@ export async function initCommand(args: Args): Promise<void> {
     "\nKlaar. Volgende stappen:\n" +
       "  1. Zet de secrets NOTION_API_KEY, NOTION_DATABASE_ID, NOTION_PROJECT_ID\n" +
       "     en CLAUDE_CODE_OAUTH_TOKEN in GitHub.\n" +
-      "  2. Controleer het Notion-schema: npx orbit-feedback init --check\n"
+      "  2. Geef deze repo leestoegang tot het @strakzat/orbit-pakket (pakket op\n" +
+      "     Internal, of via 'Manage Actions access'). Anders: zet ORBIT_NPM_TOKEN\n" +
+      "     op een PAT met read:packages.\n" +
+      "  3. Controleer het Notion-schema: npx orbit-feedback init --check\n"
   );
 }
 
