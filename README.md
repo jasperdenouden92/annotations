@@ -242,6 +242,71 @@ Annotations are filtered by `target` against `currentRoute`:
 
 ---
 
+## Feedback → PR automation
+
+Feedback that clients leave with the Inspector lands in Notion. Once a day, or on
+demand, AI opens a branch in the **client project**, addresses each open feedback
+point as its own commit, and opens a PR with a **checklist**. Reviewers uncheck a
+point to reject it: its commit is reverted and the point goes to `Afgewezen` in
+Notion. On merge, checked points go to `Opgelost`.
+
+This builds on the same Notion schema the comments API already uses (`Project` as
+a relation, `Status` as a select). It adds two statuses — `In review` and
+`Afgewezen` — and three fields the automation writes or reads: `Component`, `Bron`
+and `PR` (a URL). Validate the schema with:
+
+```bash
+npx orbit-feedback init --check
+```
+
+### Set up in a client project
+
+```bash
+npx orbit-feedback init
+```
+
+This copies a Claude Code skill and two GitHub workflows into the project. Then set:
+
+- **Secrets**: `NOTION_API_KEY`, `NOTION_DATABASE_ID`, `NOTION_PROJECT_ID` (the
+  project's Notion page id — the same relation target the comments API uses), and
+  `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`). Optional `ORBIT_GH_TOKEN`
+  (a PAT) if you want CI to run on the feedback PR.
+
+The scheduled run fires on weekdays at 18:00 Amsterdam time; start it by hand from
+the Actions tab ("Orbit feedback" → Run workflow).
+
+### Run it locally
+
+```bash
+# with NOTION_API_KEY, NOTION_DATABASE_ID and NOTION_PROJECT_ID set
+/orbit-feedback
+```
+
+Reject a point outside the PR flow:
+
+```bash
+npx orbit-feedback sync --pr 42 && git push
+```
+
+### CLI
+
+| Command | Does |
+|---------|------|
+| `orbit-feedback fetch` | Pulls open feedback → `.orbit/feedback.json` (`--claim` sets In behandeling) |
+| `orbit-feedback status` | Updates Notion status (`--set`, `--pr`, `--antwoord`, `--stale <hours>`) |
+| `orbit-feedback pr-body` | Builds the PR checklist from the manifest + git trailers |
+| `orbit-feedback sync` | Handles check/uncheck: revert + status update |
+| `orbit-feedback init` | Copies skill + workflows (`--check` validates the schema) |
+
+Points are tied to commits by the trailer `Orbit-Feedback: <notion-page-id>`.
+
+> **Source capture** (sending the React component name and source file with a
+> comment, so the AI maps feedback to code more precisely) is not part of this
+> version; the AI falls back to the label, page and element path. It is a planned
+> follow-up.
+
+---
+
 ## Deploying an update
 
 ```bash

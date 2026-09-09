@@ -1,0 +1,67 @@
+name: Orbit feedback sync
+
+# Reageert op het aan-/uitvinken van feedbackpunten in de PR-body en op het mergen
+# van de PR. Uitgevinkte punten worden teruggedraaid (revert) en in Notion op
+# "Afgewezen" gezet; bij merge gaan aangevinkte punten naar "Opgelost".
+on:
+  pull_request:
+    types: [edited, closed]
+
+concurrency:
+  group: orbit-feedback-sync-${{ github.event.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  sync:
+    # Alleen feedback-branches, en alleen als de body wijzigde of de PR gemerged is.
+    if: >-
+      startsWith(github.event.pull_request.head.ref, 'feedback/') &&
+      (
+        (github.event.action == 'edited' && github.event.changes.body != null) ||
+        (github.event.action == 'closed' && github.event.pull_request.merged == true)
+      )
+    runs-on: ubuntu-latest
+    env:
+      NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+      NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+      PR_BODY: ${{ github.event.pull_request.body }}
+      MERGED: ${{ github.event.pull_request.merged }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.ORBIT_GH_TOKEN || github.token }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://npm.pkg.github.com
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ORBIT_NPM_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Write PR body to file
+        # Via env-var, nooit direct in het script interpoleren.
+        run: |
+          mkdir -p .orbit
+          printf '%s' "$PR_BODY" > .orbit/pr-body.md
+        shell: bash
+
+      - name: Sync reverts and statuses
+        run: |
+          git config user.name "orbit-feedback[bot]"
+          git config user.email "orbit-feedback@users.noreply.github.com"
+          ARGS="--pr ${{ github.event.number }} --body-file .orbit/pr-body.md"
+          if [ "$MERGED" = "true" ]; then ARGS="$ARGS --merged"; fi
+          npx orbit-feedback sync $ARGS
+
+      - name: Push reverts
+        if: github.event.action == 'edited'
+        run: git push
