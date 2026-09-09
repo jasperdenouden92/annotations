@@ -277,9 +277,15 @@ This copies a Claude Code skill and two GitHub workflows into the project. Then 
   package's **Manage Actions access**. If neither is possible (e.g. a different
   org), set `ORBIT_NPM_TOKEN` to a PAT with `read:packages`; the workflows prefer
   it over `GITHUB_TOKEN`.
+- **PR creation**: the workflow opens a pull request, which GitHub blocks by
+  default. Enable **Allow GitHub Actions to create and approve pull requests**
+  under Settings → Actions → General → Workflow permissions (this may also be
+  gated at the org level). Alternatively set `ORBIT_GH_TOKEN` to a PAT; the
+  workflows use it instead of `GITHUB_TOKEN`.
 
 The `orbit-feedback` label is created automatically on the first run, so you don't
-need to add it by hand.
+need to add it by hand. Run `npx orbit-feedback init --check` to verify the Notion
+schema and that PR creation is allowed.
 
 The scheduled run fires on weekdays at 18:00 Amsterdam time; start it by hand from
 the Actions tab ("Orbit feedback" → Run workflow).

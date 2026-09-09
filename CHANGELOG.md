@@ -18,6 +18,10 @@ client project:
   the following push failed. The action is now passed an explicit `github_token`.
 - **`gh pr create` "label 'orbit-feedback' not found".** The label is now created
   idempotently (`gh label create ... --force`) before the PR is opened.
+- **`gh pr create` "GitHub Actions is not permitted to create or approve pull
+  requests".** Documented the required "Allow GitHub Actions to create and approve
+  pull requests" setting (or `ORBIT_GH_TOKEN`); `init --check` now verifies it via
+  `repos/{owner}/{repo}/actions/permissions/workflow`.
 - **Re-run on the same day.** A leftover `feedback/<date>` branch from a failed
   run blocked the push; it is now pushed with `--force-with-lease` on that
   bot-owned branch.

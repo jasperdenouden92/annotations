@@ -8,7 +8,7 @@ import {
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getDatabase, PROPS, STATUSES } from "../notion";
-import { type Args, flagBool } from "../util";
+import { type Args, flagBool, tryRun } from "../util";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // dist/cli.js → ../templates
@@ -25,7 +25,9 @@ const COPIES: Array<{ from: string; to: string }> = [
 
 export async function initCommand(args: Args): Promise<void> {
   if (flagBool(args, "check")) {
-    await checkSchema();
+    const schemaOk = await checkSchema();
+    const ghOk = checkGithubPermissions();
+    if (!schemaOk || !ghOk) process.exit(1);
     return;
   }
 
@@ -46,7 +48,10 @@ export async function initCommand(args: Args): Promise<void> {
       "  2. Geef deze repo leestoegang tot het @strakzat/orbit-pakket (pakket op\n" +
       "     Internal, of via 'Manage Actions access'). Anders: zet ORBIT_NPM_TOKEN\n" +
       "     op een PAT met read:packages.\n" +
-      "  3. Controleer het Notion-schema: npx orbit-feedback init --check\n"
+      "  3. Zet 'Allow GitHub Actions to create and approve pull requests' aan\n" +
+      "     (Settings → Actions → General → Workflow permissions), of zet\n" +
+      "     ORBIT_GH_TOKEN op een PAT.\n" +
+      "  4. Controleer schema en permissies: npx orbit-feedback init --check\n"
   );
 }
 
@@ -60,7 +65,7 @@ function addGitignore(entry: string): void {
   process.stdout.write(`Toegevoegd aan .gitignore: ${entry}\n`);
 }
 
-async function checkSchema(): Promise<void> {
+async function checkSchema(): Promise<boolean> {
   const db = await getDatabase();
   const props = db.properties ?? {};
   const problems: string[] = [];
@@ -100,10 +105,50 @@ async function checkSchema(): Promise<void> {
 
   if (problems.length === 0) {
     process.stdout.write("Notion-schema is in orde.\n");
-    return;
+    return true;
   }
 
   process.stdout.write("Notion-schema is niet compleet:\n");
   for (const p of problems) process.stdout.write(`  - ${p}\n`);
-  process.exit(1);
+  return false;
+}
+
+/**
+ * Verifies that GitHub Actions may open pull requests in this repo, via
+ * `repos/{owner}/{repo}/actions/permissions/workflow`. Returns false only when
+ * the setting is definitively off; a missing/failed `gh` call is treated as
+ * "unknown" (reported, not failed), since the tooling may be absent in CI.
+ */
+function checkGithubPermissions(): boolean {
+  const res = tryRun("gh", [
+    "api",
+    "repos/{owner}/{repo}/actions/permissions/workflow",
+  ]);
+  if (!res.ok) {
+    process.stdout.write(
+      "GitHub Actions-permissie niet gecontroleerd (gh niet beschikbaar, geen\n" +
+        "auth, of geen repo). Controleer handmatig dat PR-creatie aanstaat.\n"
+    );
+    return true;
+  }
+
+  let data: { can_approve_pull_request_reviews?: boolean };
+  try {
+    data = JSON.parse(res.stdout);
+  } catch {
+    process.stdout.write("GitHub Actions-permissie: kon het antwoord niet lezen.\n");
+    return true;
+  }
+
+  if (data.can_approve_pull_request_reviews) {
+    process.stdout.write("GitHub Actions mag PR's aanmaken.\n");
+    return true;
+  }
+
+  process.stdout.write(
+    "GitHub Actions mag GEEN PR's aanmaken. Zet 'Allow GitHub Actions to create\n" +
+      "and approve pull requests' aan (Settings → Actions → General → Workflow\n" +
+      "permissions), of zet ORBIT_GH_TOKEN op een PAT.\n"
+  );
+  return false;
 }
