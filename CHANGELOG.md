@@ -1,5 +1,35 @@
 # Changelog
 
+## 3.2.0
+
+### Changed
+
+- **The bot does the change at a developer's scale, not the smallest edit.** The
+  Claude prompt now allows a new component, a modal or multiple files, and only
+  skips genuinely non-code points (compliment, question) or a target it cannot
+  locate. A point needing a new dependency stays a skip-with-reason
+  (`package.json` / lockfiles are never touched). `--max-turns` raised to 120.
+
+### Added
+
+- **Caveats.** On an assumption about approach, scope or place the bot makes the
+  change anyway and records a `Kanttekening: <reason>` line in the commit body.
+  `orbit-feedback pr-body` reads those and renders a "Kanttekeningen" section, so
+  every consumer gets them without workflow glue.
+- **Stale-claim self-healing.** Both workflows call `status --stale 6h` at the
+  start, releasing `In behandeling` points older than the cutoff back to `Open`,
+  so a cancelled or hard-killed run's leaked claims recover on their own. The
+  on-failure release is kept.
+
+### Fixed
+
+- **The feedback branch is never cleaned up.** The process workflow pushes with
+  `--force-with-lease` (with a fetched baseline) so a stale same-day branch is
+  overwritten safely, and the sync workflow deletes the branch when its PR merges.
+- **Partial / max-turns runs.** Commits are counted in their own step gated on
+  `!cancelled()`, so commits from a failed Claude step still become a PR; only
+  actually-committed points go to `In review`, the rest back to `Open`.
+
 ## 3.1.1
 
 ### Fixed

@@ -2,6 +2,7 @@ import { run, tryRun } from "./util";
 
 export const TRAILER = "Orbit-Feedback";
 export const REVERT_TRAILER = "Orbit-Feedback-Revert";
+export const NOTE_TRAILER = "Kanttekening";
 
 export interface FeedbackCommit {
   sha: string;
@@ -9,6 +10,8 @@ export interface FeedbackCommit {
   subject: string;
   feedbackId?: string;
   revertId?: string;
+  /** `Kanttekening: ...` lines the bot left in the commit body. */
+  notes: string[];
 }
 
 /**
@@ -48,6 +51,7 @@ export function listFeedbackCommits(base: string): FeedbackCommit[] {
       subject: subject ?? "",
       feedbackId: trailerValue(body, TRAILER),
       revertId: trailerValue(body, REVERT_TRAILER),
+      notes: trailerValues(body, NOTE_TRAILER),
     };
   });
 }
@@ -56,6 +60,14 @@ function trailerValue(body: string, key: string): string | undefined {
   const re = new RegExp(`^${key}:\\s*(.+)$`, "im");
   const m = body.match(re);
   return m ? m[1].trim() : undefined;
+}
+
+/** All values for a line-anchored `key: ...` trailer (a commit may have several). */
+function trailerValues(body: string, key: string): string[] {
+  const re = new RegExp(`^${key}:\\s*(.+)$`, "gim");
+  const out: string[] = [];
+  for (const m of body.matchAll(re)) out.push(m[1].trim());
+  return out;
 }
 
 /** Ids that have a live (non-reverted) processing commit, mapped to that commit. */

@@ -3,6 +3,8 @@ import type { FeedbackItem } from "./types";
 export interface ProcessedEntry {
   item: FeedbackItem;
   shortSha: string;
+  /** `Kanttekening: ...` notes the bot left in this point's commit. */
+  notes: string[];
 }
 
 export interface NotProcessedEntry {
@@ -77,6 +79,18 @@ export function renderPrBody(input: RenderInput): string {
     }
   }
   lines.push("");
+
+  // Caveats the bot recorded in commit bodies — the checklist has no field for them.
+  const withNotes = processed.filter((p) => p.notes.length > 0);
+  if (withNotes.length > 0) {
+    lines.push("### Kanttekeningen van de bot");
+    for (const { item, notes } of withNotes) {
+      for (const note of notes) {
+        lines.push(`- \`${item.id}\` **${item.auteur}**: ${note}`);
+      }
+    }
+    lines.push("");
+  }
 
   lines.push(`<!-- orbit-feedback v1 project=${project} base=${base} -->`);
   lines.push("");

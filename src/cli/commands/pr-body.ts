@@ -25,7 +25,7 @@ export function prBodyCommand(args: Args): void {
   for (const item of manifest.items) {
     const commit = live.get(item.id);
     if (commit) {
-      processed.push({ item, shortSha: commit.shortSha });
+      processed.push({ item, shortSha: commit.shortSha, notes: commit.notes });
     } else {
       const reason =
         results[item.id]?.reason ?? "Niet automatisch verwerkt.";
