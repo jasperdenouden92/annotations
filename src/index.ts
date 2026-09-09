@@ -12,6 +12,10 @@ export { useAnnotations } from "./context/useAnnotations";
 export { useAnnotationsSafe } from "./context/useAnnotationsSafe";
 export { useComments } from "./hooks/useComments";
 
+// Utils
+export { getElementPath, getElementLabel } from "./utils/element-id";
+export { getElementSource } from "./utils/element-source";
+
 // Types
 export type {
   Annotation,
@@ -24,5 +28,7 @@ export type {
   PanelCorner,
   MarkerPosition,
   Comment,
+  CommentStatus,
   CommentsConfig,
+  FeedbackItem,
 } from "./types";

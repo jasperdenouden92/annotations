@@ -26,8 +26,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         filter: {
           and: [
             {
+              // Project is a Notion relation; `project` is the related page id.
               property: "Project",
-              rich_text: { equals: project as string },
+              relation: { contains: project as string },
             },
             {
               property: "Annotatie ID",
@@ -44,6 +45,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         comment: page.properties["Comment"]?.rich_text?.[0]?.plain_text ?? "",
         status: page.properties["Status"]?.select?.name ?? "Open",
         antwoord: page.properties["Antwoord"]?.rich_text?.[0]?.plain_text ?? null,
+        component: page.properties["Component"]?.rich_text?.[0]?.plain_text ?? "",
+        bron: page.properties["Bron"]?.rich_text?.[0]?.plain_text ?? "",
+        pr: page.properties["PR"]?.url ?? "",
         aangemaakt: page.properties["Aangemaakt"]?.created_time ?? "",
       }));
 
@@ -55,7 +59,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === "POST") {
-    const { project, annotationId, auteur, comment, pagina, label } = req.body ?? {};
+    const { project, annotationId, auteur, comment, pagina, label, component, bron } =
+      req.body ?? {};
 
     if (!project || !annotationId || !auteur || !comment) {
       return res.status(400).json({ error: "project, annotationId, auteur, and comment are required" });
@@ -69,7 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             title: [{ text: { content: `${auteur} — ${annotationId}` } }],
           },
           "Project": {
-            rich_text: [{ text: { content: project } }],
+            relation: [{ id: project }],
           },
           "Annotatie ID": {
             rich_text: [{ text: { content: annotationId } }],
@@ -94,6 +99,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             ? {
                 "Label": {
                   rich_text: [{ text: { content: label } }],
+                },
+              }
+            : {}),
+          ...(component
+            ? {
+                "Component": {
+                  rich_text: [{ text: { content: component } }],
+                },
+              }
+            : {}),
+          ...(bron
+            ? {
+                "Bron": {
+                  rich_text: [{ text: { content: bron } }],
                 },
               }
             : {}),

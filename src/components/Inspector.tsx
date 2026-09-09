@@ -4,6 +4,7 @@ import { useComments } from "../hooks/useComments";
 import { CommentThread } from "./CommentThread";
 import { CommentForm } from "./CommentForm";
 import { getElementPath, getElementLabel } from "../utils/element-id";
+import { getElementSource } from "../utils/element-source";
 import { PANEL_COLORS } from "../constants";
 import { XIcon } from "../icons";
 
@@ -14,6 +15,8 @@ interface SelectedElement {
   rect: DOMRect;
   path: string;
   label: string;
+  component?: string;
+  source?: string;
 }
 
 function isInspectorUI(el: HTMLElement): boolean {
@@ -39,6 +42,8 @@ function InspectorPopover({
     annotationId: selected.path,
     label: selected.label,
     enabled: !!commentsConfig,
+    component: selected.component,
+    source: selected.source,
   });
 
   // Position: prefer below the element, but flip up if not enough space
@@ -77,7 +82,7 @@ function InspectorPopover({
       {
         style: {
           display: "flex",
-          alignItems: "center",
+          alignItems: "flex-start",
           justifyContent: "space-between",
           marginBottom: 8,
         } as React.CSSProperties,
@@ -86,22 +91,58 @@ function InspectorPopover({
         "div",
         {
           style: {
-            fontSize: 12,
-            color: PANEL_COLORS.textMuted,
-            fontFamily: "monospace",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
             flex: 1,
+            minWidth: 0,
             marginRight: 8,
           } as React.CSSProperties,
         },
-        selected.label
+        React.createElement(
+          "div",
+          {
+            style: {
+              fontSize: 12,
+              color: PANEL_COLORS.textSecondary,
+              fontFamily: "monospace",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            } as React.CSSProperties,
+          },
+          selected.label
+        ),
+        selected.component || selected.source
+          ? React.createElement(
+              "div",
+              {
+                style: {
+                  fontSize: 11,
+                  color: PANEL_COLORS.textSecondary,
+                  fontFamily: "monospace",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  marginTop: 2,
+                } as React.CSSProperties,
+                title: [selected.component, selected.source]
+                  .filter(Boolean)
+                  .join(" · "),
+              },
+              [selected.component, selected.source].filter(Boolean).join(" · ")
+            )
+          : null
       ),
       React.createElement(
         "button",
         {
           onClick: onClose,
+          "aria-label": "Sluiten",
+          onFocus: (e: React.FocusEvent<HTMLButtonElement>) => {
+            e.currentTarget.style.outline = "2px solid #175CD3";
+            e.currentTarget.style.outlineOffset = "2px";
+          },
+          onBlur: (e: React.FocusEvent<HTMLButtonElement>) => {
+            e.currentTarget.style.outline = "none";
+          },
           style: {
             background: "none",
             border: "none",
@@ -109,9 +150,10 @@ function InspectorPopover({
             padding: 2,
             display: "flex",
             flexShrink: 0,
+            borderRadius: 4,
           } as React.CSSProperties,
         },
-        React.createElement(XIcon, { size: 14, color: PANEL_COLORS.textMuted })
+        React.createElement(XIcon, { size: 14, color: PANEL_COLORS.textSecondary })
       )
     ),
     // Thread + form
@@ -154,15 +196,19 @@ export function Inspector() {
       e.stopPropagation();
 
       const rect = el.getBoundingClientRect();
+      const captureSource = commentsConfig?.captureSource !== false;
+      const source = captureSource ? getElementSource(el) : {};
       setSelected({
         el,
         rect,
         path: getElementPath(el),
         label: getElementLabel(el),
+        component: source.component,
+        source: source.bron,
       });
       setHoverRect(null);
     },
-    [active]
+    [active, commentsConfig]
   );
 
   const handleKeyDown = useCallback(

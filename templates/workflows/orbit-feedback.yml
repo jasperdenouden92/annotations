@@ -1,0 +1,113 @@
+name: Orbit feedback
+
+# Verwerkt open klantfeedback tot een PR. Draait elke werkdag om 18:00 (zomertijd
+# Amsterdam; let op: de cron staat in UTC en schuift een uur met de wintertijd mee)
+# en is ook handmatig te starten.
+on:
+  schedule:
+    - cron: "0 16 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      project:
+        description: "Orbit-project (leeg = variabele ORBIT_PROJECT)"
+        required: false
+
+concurrency:
+  group: orbit-feedback
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    env:
+      NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+      NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+      ORBIT_PROJECT: ${{ github.event.inputs.project || vars.ORBIT_PROJECT }}
+      GH_TOKEN: ${{ secrets.ORBIT_GH_TOKEN || github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.ORBIT_GH_TOKEN || github.token }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://npm.pkg.github.com
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ORBIT_NPM_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Fetch open feedback
+        id: fetch
+        run: |
+          npx orbit-feedback fetch --project "$ORBIT_PROJECT" --claim
+          echo "count=$(jq '.items | length' .orbit/feedback.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Create branch
+        if: steps.fetch.outputs.count != '0'
+        run: |
+          git config user.name "orbit-feedback[bot]"
+          git config user.email "orbit-feedback@users.noreply.github.com"
+          git checkout -b "feedback/$(date +%F)"
+
+      - name: Process feedback with Claude
+        if: steps.fetch.outputs.count != '0'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: >-
+            --max-turns 60
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(git *),Bash(npm run *),Bash(npx *)"
+          prompt: |
+            Je verwerkt open Orbit-klantfeedback. Het manifest staat in
+            `.orbit/feedback.json`. De branch is al aangemaakt en de punten staan
+            al op "In behandeling". Doe ALLEEN stap 3 hieronder: NIET fetchen, GEEN
+            branch maken, GEEN PR openen, GEEN Notion-status bijwerken — dat doet de
+            workflow.
+
+            Verwerk elk punt uit `.orbit/feedback.json`, in volgorde. Per punt:
+            - Lokaliseer de code via `bron` (bestand:regel), dan `component`, dan
+              `label`/`pagina`/`annotationId` (CSS-pad) met grep.
+            - Ben je zeker en is het een codewijziging? Maak de kleinst mogelijke
+              wijziging, draai typecheck/lint als die scripts bestaan, en commit het
+              punt precies één keer met deze vorm:
+
+                  fix(feedback): <korte Engelse samenvatting>
+
+                  <auteur>: "<comment>"
+
+                  Orbit-Feedback: <notion-page-id>
+
+            - Twijfel je, of is het geen codewijziging (compliment, vraag,
+              contentbeslissing)? Doe niets en noteer het in `.orbit/results.json`:
+              { "<id>": { "skipped": true, "reason": "<reden in het Nederlands>" } }
+
+            Harde regels: één punt = één commit; trailer verplicht; geen amend/squash;
+            geen refactors, dependency-wijzigingen of formatting-only diffs; kom niet
+            aan package.json of lockfiles; code en commits Engels, klantteksten
+            Nederlands. Forceer geen gok — sla onzekere punten over met een reden.
+
+      - name: Open pull request
+        if: steps.fetch.outputs.count != '0'
+        run: |
+          npx orbit-feedback pr-body > .orbit/pr-body.md
+          git push -u origin HEAD
+          gh pr create \
+            --title "Feedback $(date +%F)" \
+            --body-file .orbit/pr-body.md \
+            --label orbit-feedback
+          PR_URL=$(gh pr view --json url -q .url)
+          npx orbit-feedback status --from-manifest --set "In review" --pr "$PR_URL"
+          npx orbit-feedback status --from-results --set Open
+
+      - name: Release claim on failure
+        if: failure() && steps.fetch.outputs.count != '0'
+        run: npx orbit-feedback status --from-manifest --set Open

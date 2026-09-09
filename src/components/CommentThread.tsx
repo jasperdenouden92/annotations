@@ -11,7 +11,9 @@ interface CommentThreadProps {
 const STATUS_COLORS: Record<Comment["status"], { bg: string; text: string }> = {
   "Open": { bg: "#FEF3F2", text: "#B42318" },
   "In behandeling": { bg: "#FFF6ED", text: "#B93815" },
+  "In review": { bg: "#EFF8FF", text: "#175CD3" },
   "Opgelost": { bg: "#ECFDF3", text: "#067647" },
+  "Afgewezen": { bg: "#F2F4F7", text: "#475467" },
 };
 
 function formatDate(dateStr: string): string {

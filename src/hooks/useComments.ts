@@ -7,6 +7,8 @@ interface UseCommentsProps {
   annotationId: string;
   label: string;
   enabled: boolean;
+  component?: string;
+  source?: string;
 }
 
 interface UseCommentsReturn {
@@ -22,6 +24,8 @@ export function useComments({
   annotationId,
   label,
   enabled,
+  component,
+  source,
 }: UseCommentsProps): UseCommentsReturn {
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -72,12 +76,14 @@ export function useComments({
           comment: data.comment,
           pagina: typeof window !== "undefined" ? window.location.pathname : "/",
           label,
+          component,
+          bron: source,
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await fetchComments();
     },
-    [apiBase, project, annotationId, fetchComments]
+    [apiBase, project, annotationId, label, component, source, fetchComments]
   );
 
   return { comments, isLoading, error, submitComment };

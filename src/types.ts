@@ -62,19 +62,61 @@ export interface AnnotationProviderProps {
   children: React.ReactNode;
 }
 
+export type CommentStatus =
+  | "Open"
+  | "In behandeling"
+  | "In review"
+  | "Opgelost"
+  | "Afgewezen";
+
 export interface Comment {
   id: string;
   auteur: string;
   comment: string;
-  status: "Open" | "In behandeling" | "Opgelost";
+  status: CommentStatus;
   antwoord: string | null;
   aangemaakt: string;
+  /** React component name of the clicked element (dev/staging builds only). */
+  component?: string;
+  /** Source location `path/to/File.tsx:line` of the clicked element (dev/staging builds only). */
+  bron?: string;
+  /** Link to the pull request that addresses this comment, if any. */
+  pr?: string;
 }
 
 export interface CommentsConfig {
   enabled: boolean;
   apiBase: string;
   project: string;
+  /**
+   * Capture the React component name and source file of the clicked element
+   * and send them along with the comment. Defaults to `true`; a no-op in
+   * production builds where the source attributes are not present.
+   */
+  captureSource?: boolean;
+}
+
+/**
+ * A single piece of client feedback, as consumed by the `orbit-feedback` CLI
+ * and any downstream automation. Mirrors the Notion database row.
+ */
+export interface FeedbackItem {
+  /** Notion page id. */
+  id: string;
+  project: string;
+  /** CSS element path or annotation id the comment was attached to. */
+  annotationId: string;
+  label: string;
+  pagina: string;
+  auteur: string;
+  comment: string;
+  component: string;
+  bron: string;
+  status: CommentStatus;
+  antwoord: string | null;
+  pr: string;
+  /** Notion `created_time`. */
+  aangemaakt: string;
 }
 
 export interface AnnotationConfig {
