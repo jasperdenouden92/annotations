@@ -295,6 +295,14 @@ so you can read why a point was skipped even though the AI step hides its output
 If the AI skips every point, no PR is opened and each point is released back to
 `Open` with its skip reason.
 
+The bot addresses each point at the scale a developer would (a new component, a
+modal, multiple files) rather than the smallest possible edit — everything lands
+as a reviewable, revertable PR. When it makes an assumption it does the change
+anyway and records a caveat, collected into a **Kanttekeningen** section in the PR
+body. A merged PR's `feedback/<date>` branch is deleted automatically, and a
+cancelled run's claims self-heal: both workflows release `In behandeling` points
+older than six hours back to `Open` at the start of the next run.
+
 ### Run it locally
 
 ```bash

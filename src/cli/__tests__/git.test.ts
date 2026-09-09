@@ -6,6 +6,7 @@ function commit(overrides: Partial<FeedbackCommit>): FeedbackCommit {
     sha: "0".repeat(40),
     shortSha: "0000000",
     subject: "fix(feedback): x",
+    notes: [],
     ...overrides,
   };
 }

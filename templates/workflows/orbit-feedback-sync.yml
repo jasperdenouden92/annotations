@@ -2,7 +2,8 @@ name: Orbit feedback sync
 
 # Reageert op het aan-/uitvinken van feedbackpunten in de PR-body en op het mergen
 # van de PR. Uitgevinkte punten worden teruggedraaid (revert) en in Notion op
-# "Afgewezen" gezet; bij merge gaan aangevinkte punten naar "Opgelost".
+# "Afgewezen" gezet; bij merge gaan aangevinkte punten naar "Opgelost" en wordt de
+# feedback-branch opgeruimd.
 on:
   pull_request:
     types: [edited, closed]
@@ -28,6 +29,7 @@ jobs:
     env:
       NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
       NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+      NOTION_PROJECT_ID: ${{ secrets.NOTION_PROJECT_ID }}
       PR_BODY: ${{ github.event.pull_request.body }}
       MERGED: ${{ github.event.pull_request.merged }}
     steps:
@@ -52,6 +54,12 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.ORBIT_NPM_TOKEN || secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.ORBIT_NPM_TOKEN || secrets.GITHUB_TOKEN }}
 
+      - name: Release stale claims
+        # Vangt claims op die een gecancelde process-run liet staan; ouder dan 6 uur
+        # terug naar Open, zodat lekkende claims zichzelf herstellen.
+        if: ${{ env.NOTION_PROJECT_ID != '' }}
+        run: npx orbit-feedback status --set Open --stale 6h
+
       - name: Write PR body to file
         # Via env-var, nooit direct in het script interpoleren.
         run: |
@@ -60,7 +68,13 @@ jobs:
         shell: bash
 
       - name: Sync reverts and statuses
+        env:
+          BASE: ${{ github.event.pull_request.base.ref }}
         run: |
+          # De CLI lost de base op naar origin/<base>; in deze checkout van alleen de
+          # feedback-branch bestaat de lokale base-branch niet. Fetch hem zodat
+          # origin/<base> aanwezig is.
+          git fetch origin "$BASE" || true
           git config user.name "orbit-feedback[bot]"
           git config user.email "orbit-feedback@users.noreply.github.com"
           ARGS="--pr ${{ github.event.number }} --body-file .orbit/pr-body.md"
@@ -70,3 +84,9 @@ jobs:
       - name: Push reverts
         if: github.event.action == 'edited'
         run: git push
+
+      - name: Delete merged feedback branch
+        # Bij merge de bot-branch opruimen, zodat een volgende run van dezelfde dag
+        # niet op een stale branch stuit. || true: auto-delete kan al gedraaid zijn.
+        if: github.event.action == 'closed' && github.event.pull_request.merged == true
+        run: git push origin --delete "${{ github.event.pull_request.head.ref }}" || true

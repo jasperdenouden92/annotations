@@ -27,8 +27,16 @@ function item(overrides: Partial<FeedbackItem>): FeedbackItem {
 
 describe("pr-body render + parse round-trip", () => {
   const processed = [
-    { item: item({ id: "11111111-1111-1111-1111-111111111111" }), shortSha: "abc1234" },
-    { item: item({ id: "22222222-2222-2222-2222-222222222222" }), shortSha: "def5678" },
+    {
+      item: item({ id: "11111111-1111-1111-1111-111111111111" }),
+      shortSha: "abc1234",
+      notes: ["Aangenomen dat de knop rechts uitlijnt met de tabel."],
+    },
+    {
+      item: item({ id: "22222222-2222-2222-2222-222222222222" }),
+      shortSha: "def5678",
+      notes: [],
+    },
   ];
   const notProcessed = [
     {
@@ -65,6 +73,28 @@ describe("pr-body render + parse round-trip", () => {
 
   it("embeds machine-readable project/base metadata", () => {
     expect(parsePrMeta(body)).toEqual({ project: "demo", base: "main" });
+  });
+
+  it("renders a Kanttekeningen section for processed points that have notes", () => {
+    expect(body).toContain("### Kanttekeningen van de bot");
+    expect(body).toContain(
+      "- `11111111-1111-1111-1111-111111111111` **Elwin**: Aangenomen dat de knop rechts uitlijnt met de tabel."
+    );
+    // A note line is not a checklist line, so parsing still yields two entries.
+    expect(parsePrBody(body)).toHaveLength(2);
+  });
+
+  it("omits the Kanttekeningen section when no point has notes", () => {
+    const plain = renderPrBody({
+      project: "demo",
+      date: "2026-09-09",
+      base: "main",
+      processed: [
+        { item: item({ id: "44444444-4444-4444-4444-444444444444" }), shortSha: "aaa1111", notes: [] },
+      ],
+      notProcessed: [],
+    });
+    expect(plain).not.toContain("Kanttekeningen");
   });
 
   it("ignores prose the reviewer may add", () => {

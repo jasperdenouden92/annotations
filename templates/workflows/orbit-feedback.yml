@@ -50,6 +50,13 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.ORBIT_NPM_TOKEN || secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.ORBIT_NPM_TOKEN || secrets.GITHUB_TOKEN }}
 
+      - name: Release stale claims
+        # Een gecancelde of hard-gekilde run laat punten op "In behandeling" staan;
+        # de on-failure-stap vangt dat niet. Geef claims ouder dan 6 uur weer vrij,
+        # zodat lekkende claims zichzelf herstellen.
+        if: ${{ env.NOTION_PROJECT_ID != '' }}
+        run: npx orbit-feedback status --set Open --stale 6h
+
       - name: Fetch open feedback
         id: fetch
         run: |
@@ -67,27 +74,28 @@ jobs:
         if: steps.fetch.outputs.count != '0'
         uses: anthropics/claude-code-action@v1
         with:
-          # Without github_token the action mints its own GitHub App token via OIDC,
-          # writes it into the git config, and revokes it when this step ends — so the
-          # push in the next step fails with "Invalid username or token". Pass a token
-          # we control so the git remote auth stays valid across steps.
-          github_token: ${{ secrets.ORBIT_GH_TOKEN || github.token }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Zonder github_token ruilt de actie een eigen App-token in, zet die in
+          # de git-config en trekt hem aan het eind van de stap weer in. De
+          # push in "Open pull request" faalt dan met "Invalid username or token".
+          github_token: ${{ secrets.ORBIT_GH_TOKEN || github.token }}
           claude_args: >-
-            --max-turns 60
+            --max-turns 120
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(git *),Bash(npm run *),Bash(npx *)"
           prompt: |
             Je verwerkt open Orbit-klantfeedback. Het manifest staat in
             `.orbit/feedback.json`. De branch is al aangemaakt en de punten staan
-            al op "In behandeling". Doe ALLEEN stap 3 hieronder: NIET fetchen, GEEN
-            branch maken, GEEN PR openen, GEEN Notion-status bijwerken — dat doet de
-            workflow.
+            al op "In behandeling". Doe ALLEEN het werk hieronder: NIET fetchen,
+            GEEN branch maken, GEEN PR openen, GEEN Notion-status bijwerken — dat
+            doet de workflow.
 
             Verwerk elk punt uit `.orbit/feedback.json`, in volgorde. Per punt:
             - Lokaliseer de code via `bron` (bestand:regel), dan `component`, dan
               `label`/`pagina`/`annotationId` (CSS-pad) met grep.
-            - Ben je zeker en is het een codewijziging? Maak de kleinst mogelijke
-              wijziging, draai typecheck/lint als die scripts bestaan, en commit het
+            - Is het een codewijziging? Voer hem uit op de juiste schaal — dat mag
+              een nieuw component, een modal of meerdere bestanden zijn. Kies de
+              oplossing die een ontwikkelaar ook zou kiezen, niet per se de
+              kleinste. Draai typecheck/lint als die scripts bestaan en commit het
               punt precies één keer met deze vorm:
 
                   fix(feedback): <korte Engelse samenvatting>
@@ -96,41 +104,48 @@ jobs:
 
                   Orbit-Feedback: <notion-page-id>
 
-            - Twijfel je, of is het geen codewijziging (compliment, vraag,
-              contentbeslissing)? Doe niets en noteer het in `.orbit/results.json`:
+            - Zit je met een aanname over aanpak, scope of plek? Maak de wijziging
+              TOCH — niet overslaan — en zet je kanttekening als losse regel in de
+              commit-body, in het Nederlands, zodat de reviewer het kan wegen:
+
+                  Kanttekening: <wat je aannam en waarom>
+
+            - Sla een punt ALLEEN over als het geen codewijziging is (compliment,
+              vraag) of als je de plek echt niet kunt vinden. Noteer dat in
+              `.orbit/results.json`:
               { "<id>": { "skipped": true, "reason": "<reden in het Nederlands>" } }
 
-            Harde regels: één punt = één commit; trailer verplicht; geen amend/squash;
-            geen refactors, dependency-wijzigingen of formatting-only diffs; kom niet
-            aan package.json of lockfiles; code en commits Engels, klantteksten
-            Nederlands. Forceer geen gok — sla onzekere punten over met een reden.
+            Harde regels: één punt = één commit; trailer verplicht; geen
+            amend/squash; raak geen ongerelateerde code aan en lever geen
+            formatting-only diffs; kom niet aan package.json of lockfiles (heeft
+            een punt een nieuwe dependency nodig, sla het dan over met die reden);
+            code en commits Engels, klantteksten en kanttekeningen Nederlands.
+            Placeholder-content mag als de klant daar zelf om vraagt. Heb je
+            bestanden bewerkt, dan MOET je committen — laat nooit onverwerkte
+            wijzigingen achter.
+
+      - name: Count commits
+        id: commits
+        # Ook draaien als de Claude-stap faalde (bijv. max-turns): commits die
+        # hij al maakte moeten alsnog een PR worden, niet met de runner sneuvelen.
+        if: ${{ !cancelled() && steps.fetch.outputs.count != '0' }}
+        run: |
+          echo "count=$(git rev-list --count "origin/${{ github.event.repository.default_branch }}..HEAD")" >> "$GITHUB_OUTPUT"
 
       - name: Open pull request
-        if: steps.fetch.outputs.count != '0'
+        # !cancelled(): ook na een gefaalde Claude-stap, zolang er commits zijn.
+        if: ${{ !cancelled() && steps.fetch.outputs.count != '0' && steps.commits.outputs.count != '0' }}
         env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          BASE: origin/${{ github.event.repository.default_branch }}
         run: |
           BRANCH="feedback/$(date +%F)"
-          # Claude may skip every point (nothing to change). With no commits there is
-          # no PR to open — releasing the points instead of failing on an empty branch.
-          # --from-manifest resets all claimed points to Open; --from-results then
-          # writes each skip reason as the answer.
-          COMMITS=$(git rev-list --count "origin/$DEFAULT_BRANCH..HEAD")
-          if [ "$COMMITS" -eq 0 ]; then
-            echo "Geen commits — alle punten overgeslagen. Punten worden vrijgegeven."
-            npx orbit-feedback status --from-manifest --set Open
-            npx orbit-feedback status --from-results --set Open
-            exit 0
-          fi
+          # pr-body voegt zelf een "Kanttekeningen"-sectie toe uit de commit-bodies.
           npx orbit-feedback pr-body > .orbit/pr-body.md
-          # The feedback/<date> branch is only ever created by this workflow, so a
-          # leftover from a failed run earlier today is safe to overwrite. Fetch it
-          # first so --force-with-lease has a baseline (it still refuses if someone
-          # else pushed to it in the meantime).
+          # --force-with-lease: een eerdere mislukte run van dezelfde dag kan de
+          # bot-branch al gepusht hebben zonder PR. Fetch eerst voor een baseline,
+          # zodat de lease die stale branch veilig mag overschrijven.
           git fetch origin "$BRANCH" || true
-          git push --force-with-lease -u origin "HEAD:$BRANCH"
-          # Create the label if the repo doesn't have it yet; --force is a no-op when
-          # it already exists, so gh pr create never fails on a missing label.
+          git push -u --force-with-lease origin HEAD
           gh label create orbit-feedback \
             --description "Automated Orbit customer-feedback PR" \
             --color 7C3AED --force
@@ -139,21 +154,46 @@ jobs:
             --body-file .orbit/pr-body.md \
             --label orbit-feedback
           PR_URL=$(gh pr view --json url -q .url)
-          npx orbit-feedback status --from-manifest --set "In review" --pr "$PR_URL"
+          # Alleen echt gecommitte punten naar "In review"; de rest — overgeslagen
+          # of, bij een max-turns stop, half werk zonder commit — terug naar Open,
+          # zodat geen enkel punt op "In review" blijft hangen zonder wijziging.
+          COMMITTED=$(git log "$BASE..HEAD" --format=%b \
+            | sed -n 's/^Orbit-Feedback:[[:space:]]*//p' | sort -u)
+          if [ -n "$COMMITTED" ]; then
+            npx orbit-feedback status $COMMITTED --set "In review" --pr "$PR_URL"
+          fi
+          UNCOMMITTED=$(comm -23 \
+            <(jq -r '.items[].id' .orbit/feedback.json | sort -u) \
+            <(printf '%s\n' "$COMMITTED" | sort -u))
+          if [ -n "$UNCOMMITTED" ]; then
+            npx orbit-feedback status $UNCOMMITTED --set Open
+          fi
+          # Skip-redenen als antwoord terugschrijven op de overgeslagen punten.
           npx orbit-feedback status --from-results --set Open
 
-      - name: Release claim on failure
-        if: failure() && steps.fetch.outputs.count != '0'
-        run: npx orbit-feedback status --from-manifest --set Open
+      - name: No code changes
+        # Nul commits (alles overgeslagen, of een gefaalde run zonder werk): geen
+        # PR, wel alles terug naar Open met de reden uit results.json als antwoord.
+        if: ${{ !cancelled() && steps.fetch.outputs.count != '0' && steps.commits.outputs.count == '0' }}
+        run: |
+          npx orbit-feedback status --from-manifest --set Open
+          npx orbit-feedback status --from-results --set Open
 
-      - name: Upload feedback artifacts
-        # The manifest, results and PR body are the only place the skip reasons are
-        # readable — the claude-code-action hides its own output. .orbit/ is a hidden
-        # directory, so include-hidden-files is required.
-        if: always()
+      - name: Keep run output
+        # feedback.json, results.json (skip-redenen) en pr-body.md zijn anders
+        # niet terug te lezen: de Claude-actie verbergt zijn output.
+        if: always() && steps.fetch.outputs.count != '0'
         uses: actions/upload-artifact@v4
         with:
-          name: orbit-feedback
+          name: orbit-feedback-${{ github.run_id }}
           path: .orbit/
+          # .orbit/ is een verborgen map; zonder dit blijft het artifact leeg.
           include-hidden-files: true
+          if-no-files-found: ignore
           retention-days: 14
+
+      - name: Release claim on failure
+        # Alleen als er niets gecommit is; anders zou dit de zojuist geopende PR
+        # z'n punten terugzetten. Vangnet voor een cancel of een vroege fout.
+        if: ${{ failure() && steps.fetch.outputs.count != '0' && steps.commits.outputs.count == '0' }}
+        run: npx orbit-feedback status --from-manifest --set Open
