@@ -290,6 +290,11 @@ schema and that PR creation is allowed.
 The scheduled run fires on weekdays at 18:00 Amsterdam time; start it by hand from
 the Actions tab ("Orbit feedback" → Run workflow).
 
+Each run uploads its `.orbit/` folder (manifest, results, PR body) as an artifact,
+so you can read why a point was skipped even though the AI step hides its output.
+If the AI skips every point, no PR is opened and each point is released back to
+`Open` with its skip reason.
+
 ### Run it locally
 
 ```bash

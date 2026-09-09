@@ -25,6 +25,14 @@ client project:
 - **Re-run on the same day.** A leftover `feedback/<date>` branch from a failed
   run blocked the push; it is now pushed with `--force-with-lease` on that
   bot-owned branch.
+- **Every point skipped.** When Claude changes nothing, the branch has no commits
+  and "No commits between main and feedback/<date>" failed the run. The step now
+  counts commits against the default branch first; with zero it skips the push and
+  PR and releases every point back to `Open` with its skip reason as the answer.
+- **Unreadable skip reasons.** `claude-code-action` hides its output, so `.orbit/`
+  (manifest, results, PR body) is now uploaded as a run artifact
+  (`actions/upload-artifact@v4`, `if: always()`, `include-hidden-files: true`,
+  14-day retention).
 
 ## 3.1.0
 
