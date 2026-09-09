@@ -19,4 +19,12 @@ export default defineConfig([
     format: ["esm", "cjs"],
     dts: true,
   },
+  // Feedback CLI (Node, single ESM file with a shebang).
+  {
+    entry: { cli: "src/cli/index.ts" },
+    format: ["esm"],
+    platform: "node",
+    target: "node18",
+    banner: { js: "#!/usr/bin/env node" },
+  },
 ]);
