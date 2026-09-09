@@ -2,35 +2,257 @@
 
 `@strakzat/orbit` — central annotation & feedback engine. One package, many projects.
 
-## Installation
+Orbit does three things, and you can adopt them one at a time:
+
+1. **An in-app overlay** clients use on a staging build — annotations you write for
+   them, and a feedback Inspector where they click any element and leave a comment.
+2. **A comments API** (on Vercel, or the built-in Vite dev plugin locally) that
+   stores those comments in a Notion database.
+3. **A feedback → PR automation** (a GitHub Action) that, daily or on demand, turns
+   the open Notion feedback into a branch with one commit per point and a pull
+   request with a checklist you review, tweak and merge.
+
+## How the feedback loop works
+
+```
+Client clicks an element on staging, leaves a comment
+        │
+        ▼
+Comments API (Vercel / Vite dev plugin)  ──►  Notion "Feedback" database  (status: Open)
+        │
+        ▼
+GitHub Action "Orbit feedback"  (weekdays 18:00, or Run workflow)
+   • claims the open points (status: In behandeling)
+   • AI makes one commit per point on a feedback/<date> branch
+   • opens a PR with a checklist                            (status: In review)
+        │
+        ▼
+You review the PR
+   • uncheck a point  ──►  its commit is reverted           (status: Afgewezen)
+   • merge            ──►  checked points kept               (status: Opgelost)
+```
+
+Every point is tied to its commit by a `Orbit-Feedback: <notion-page-id>` trailer,
+so unchecking a box in the PR body maps back to exactly one commit and one Notion
+row.
+
+---
+
+## Environment variables — where each one goes
+
+The three parts run in three places, so the same Notion values are set in more than
+one spot. Nothing here is optional unless marked.
+
+**Vercel** (the comments API deployment) — Project → Settings → Environment Variables:
+
+| Variable | What it is |
+|---|---|
+| `NOTION_API_KEY` | Secret of a Notion internal integration (starts with `ntn_`) |
+| `NOTION_DATABASE_ID` | The Feedback database's id (32 chars from its URL) |
+| `NOTION_PROJECT_ID` | The project's page id in your Projects database (the relation target) |
+
+**GitHub Actions** (the client repo) — Settings → Secrets and variables → Actions → **Secrets**:
+
+| Secret | What it is |
+|---|---|
+| `NOTION_API_KEY` | Same value as in Vercel |
+| `NOTION_DATABASE_ID` | Same value as in Vercel |
+| `NOTION_PROJECT_ID` | Same value as in Vercel |
+| `CLAUDE_CODE_OAUTH_TOKEN` | From `claude setup-token` — lets the Action run Claude on your subscription |
+| `ORBIT_GH_TOKEN` | *Optional.* A PAT (repo scope). Needed if the repo can't create PRs with the default token, or if you want CI to run on the feedback PR |
+| `ORBIT_NPM_TOKEN` | *Optional.* A PAT with `read:packages`. Needed only if the repo can't read the `@strakzat/orbit` package with its default token |
+
+**Local development** (the client app) — a `.env` in the project root, read by the
+Vite dev plugin so feedback works without deploying the API:
+
+```dotenv
+NOTION_API_KEY=ntn_...
+NOTION_DATABASE_ID=...
+NOTION_PROJECT_ID=...
+```
+
+Two GitHub **repository settings** also matter for the automation (not env vars):
+
+- **Package read access** — set the `@strakzat/orbit` package to **Internal**
+  visibility, or add the repo under the package's **Manage Actions access**, so the
+  Action's token may install it. (Otherwise use `ORBIT_NPM_TOKEN`.)
+- **PR creation** — enable **Allow GitHub Actions to create and approve pull
+  requests** under Settings → Actions → General → Workflow permissions. (Otherwise
+  use `ORBIT_GH_TOKEN`.)
+
+---
+
+## Install
+
+### 1. Install the package
 
 ```bash
 npm install @strakzat/orbit
 ```
 
-Make sure your `.npmrc` points to GitHub Packages:
+The package lives on GitHub Packages, so your project's `.npmrc` needs:
+
 ```
-@jasperdenouden92:registry=https://npm.pkg.github.com
+@strakzat:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NPM_TOKEN}
 ```
 
----
+Set `NPM_TOKEN` in your shell (and, for CI, as the `ORBIT_NPM_TOKEN` secret) to a
+GitHub PAT with at least `read:packages`.
 
-## Quick start
-
-The fastest way to get started is the CLI:
+### 2. Add the overlay to the app
 
 ```bash
 npx orbit-init
 ```
 
-This automates the full setup:
+This finds your root layout, adds the imports, wraps it in `<AnnotationProvider>`
+and drops in `<AnnotationButton />` and `<AnnotationPanel />`. It's idempotent. See
+[Manual setup](#manual-setup) if you'd rather wire it up yourself, and enable the
+feedback Inspector by passing a `comments` config (below).
 
-1. Creates `src/annotations/data.js` with an empty annotations array
-2. Finds your root layout file (the one that uses `useLocation()`, e.g. `App.tsx`)
-3. Adds the required imports
-4. Wraps your layout in `<AnnotationProvider>` and adds `<AnnotationButton />` and `<AnnotationPanel />`
+### 3. Create the Notion database and integration
 
-The command is idempotent: if everything is already configured, nothing changes.
+- Create (or reuse) a **Feedback** database with the [schema below](#notion-schema).
+  `Project` is a **relation** to your Projects database.
+- Create a Notion **internal integration** (notion.so/my-integrations) and copy its
+  secret — this is `NOTION_API_KEY`.
+- **Share both databases** with that integration (the Feedback DB *and* the Projects
+  DB it relates to) via each database's ••• → Connections. Without access to the
+  Projects DB, Notion hides the `Project` relation from the API.
+
+### 4. Deploy the comments API
+
+The widget POSTs comments to `/api/comments` and reads them back with GET. Build that
+endpoint with the server helpers and deploy it (e.g. on Vercel), setting the three
+Notion variables there:
+
+```ts
+import { buildNotionCommentProperties, parseNotionComment } from "@strakzat/orbit/server";
+```
+
+See [Server helpers](#server-helpers-for-the-comments-api) for the full handler. For
+local development you don't need the deployed API — add the Vite dev plugin instead:
+
+```ts
+// vite.config.ts
+import { annotationsDevApi } from "@strakzat/orbit/vite";
+export default defineConfig({ plugins: [annotationsDevApi(), react()] });
+```
+
+It serves `/api/comments` from your `.env` during `vite dev`.
+
+Point the overlay at the API and enable the Inspector:
+
+```tsx
+<AnnotationProvider
+  annotations={annotations}
+  currentRoute={pathname}
+  comments={{
+    enabled: true,
+    apiBase: "",                       // same-origin; or your Vercel URL
+    project: import.meta.env.VITE_NOTION_PROJECT_ID,
+  }}
+>
+```
+
+### 5. Set up the feedback → PR automation
+
+In the client repo:
+
+```bash
+npx orbit-feedback init
+```
+
+This copies two GitHub workflows and a Claude Code skill into the project. Then:
+
+1. Add the GitHub **secrets** from the table above (`NOTION_*`,
+   `CLAUDE_CODE_OAUTH_TOKEN`, and the optional PATs).
+2. Enable the two repo **settings** (package access, PR creation).
+3. Verify everything:
+
+   ```bash
+   npx orbit-feedback init --check
+   ```
+
+   This checks the Notion schema (properties and statuses) and whether GitHub
+   Actions is allowed to open PRs, and tells you exactly what's missing.
+
+The scheduled run fires on weekdays at 18:00 Amsterdam time; start it by hand from
+the Actions tab ("Orbit feedback" → Run workflow). The `orbit-feedback` label is
+created automatically on the first run.
+
+---
+
+## Notion schema
+
+The Feedback database needs these properties (Dutch names, exactly):
+
+| Property | Type | Holds |
+|---|---|---|
+| `Naam` | Title | Auto-filled summary |
+| `Project` | **Relation** | Link to the Projects database (keyed by `NOTION_PROJECT_ID`) |
+| `Annotatie ID` | Text | CSS path or annotation id of the element |
+| `Comment` | Text | The client's comment |
+| `Auteur` | Text | Client name |
+| `Status` | Select | `Open`, `In behandeling`, `In review`, `Opgelost`, `Afgewezen` |
+| `Pagina` | Text | The page/route the comment is on |
+| `Label` | Text | Tag + text of the element |
+| `Component` | Text | React component name (when available) |
+| `Bron` | Text | `file:line` of the element (when available) |
+| `Antwoord` | Text | Reply shown back to the client |
+| `PR` | URL | Link to the feedback PR |
+
+`npx orbit-feedback init --check` validates all of this.
+
+---
+
+## The automation in detail
+
+- **Scale.** The bot addresses each point the way a developer would — a new
+  component, a modal, multiple files — not the smallest possible edit. Everything
+  lands as a reviewable, revertable PR, so it can be eager.
+- **Caveats.** When it makes an assumption about approach, scope or place, it makes
+  the change anyway and records a `Kanttekening:` line in the commit body. These are
+  collected into a **Kanttekeningen** section at the bottom of the PR.
+- **Skips.** It only skips genuinely non-code points (a compliment, a question) or a
+  target it truly can't locate; a point needing a new dependency is skipped with a
+  reason (it never touches `package.json` or lockfiles). Skip reasons are written
+  back to Notion as the answer, and every run uploads its `.orbit/` folder (manifest,
+  results, PR body) as a run artifact so you can read them — the AI step hides its
+  own output.
+- **No changes.** If every point is skipped, no PR is opened and each point is
+  released back to `Open` with its reason.
+- **Cleanup & self-healing.** A merged PR's `feedback/<date>` branch is deleted, and
+  a cancelled run's claims recover: both workflows release `In behandeling` points
+  older than six hours back to `Open` at the start of the next run.
+
+### Run it locally
+
+```bash
+# with NOTION_API_KEY, NOTION_DATABASE_ID and NOTION_PROJECT_ID set
+/orbit-feedback
+```
+
+Reject a point outside the PR flow:
+
+```bash
+npx orbit-feedback sync --pr 42 && git push
+```
+
+### CLI
+
+| Command | Does |
+|---------|------|
+| `orbit-feedback fetch` | Pulls open feedback → `.orbit/feedback.json` (`--claim` sets In behandeling) |
+| `orbit-feedback status` | Updates Notion status (`--set`, `--pr`, `--antwoord`, `--stale <hours>`) |
+| `orbit-feedback pr-body` | Builds the PR checklist (and Kanttekeningen) from the manifest + git trailers |
+| `orbit-feedback sync` | Handles check/uncheck: revert + status update |
+| `orbit-feedback init` | Copies skill + workflows (`--check` validates schema and PR permission) |
+
+> **Source capture** (sending the React component name and source file with a
+> comment, so the AI maps feedback to code more precisely) is a planned follow-up;
+> the AI currently falls back to the label, page and element path.
 
 ---
 
@@ -134,7 +356,7 @@ This scans your `src/` folder for navigation, tables, forms, cards, modals, etc.
 
 > **Tip:** after `orbit-init`, `orbit-scan` is the logical next step to label your UI elements.
 
-### 6. Server helpers for the comments API
+### Server helpers for the comments API
 
 The package exports server-side helpers for your Notion comments API:
 
@@ -239,99 +461,6 @@ Annotations are filtered by `target` against `currentRoute`:
 - **Wildcards**: `"projects/:id/details"` matches `/projects/123/details`
 - **Global**: `"global"` always matches, on every page
 - **Context**: `"dialog:conversation"` matches when `pushContext("dialog:conversation")` is active
-
----
-
-## Feedback → PR automation
-
-Feedback that clients leave with the Inspector lands in Notion. Once a day, or on
-demand, AI opens a branch in the **client project**, addresses each open feedback
-point as its own commit, and opens a PR with a **checklist**. Reviewers uncheck a
-point to reject it: its commit is reverted and the point goes to `Afgewezen` in
-Notion. On merge, checked points go to `Opgelost`.
-
-This builds on the same Notion schema the comments API already uses (`Project` as
-a relation, `Status` as a select). It adds two statuses — `In review` and
-`Afgewezen` — and three fields the automation writes or reads: `Component`, `Bron`
-and `PR` (a URL). Validate the schema with:
-
-```bash
-npx orbit-feedback init --check
-```
-
-### Set up in a client project
-
-```bash
-npx orbit-feedback init
-```
-
-This copies a Claude Code skill and two GitHub workflows into the project. Then set:
-
-- **Secrets**: `NOTION_API_KEY`, `NOTION_DATABASE_ID`, `NOTION_PROJECT_ID` (the
-  project's Notion page id — the same relation target the comments API uses), and
-  `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`). Optional `ORBIT_GH_TOKEN`
-  (a PAT) if you want CI to run on the feedback PR.
-- **Package access**: `npm ci` installs `@strakzat/orbit` from GitHub Packages.
-  The workflow's `GITHUB_TOKEN` can read it only if this repo has access to the
-  package — set the package to **Internal** visibility, or add the repo under the
-  package's **Manage Actions access**. If neither is possible (e.g. a different
-  org), set `ORBIT_NPM_TOKEN` to a PAT with `read:packages`; the workflows prefer
-  it over `GITHUB_TOKEN`.
-- **PR creation**: the workflow opens a pull request, which GitHub blocks by
-  default. Enable **Allow GitHub Actions to create and approve pull requests**
-  under Settings → Actions → General → Workflow permissions (this may also be
-  gated at the org level). Alternatively set `ORBIT_GH_TOKEN` to a PAT; the
-  workflows use it instead of `GITHUB_TOKEN`.
-
-The `orbit-feedback` label is created automatically on the first run, so you don't
-need to add it by hand. Run `npx orbit-feedback init --check` to verify the Notion
-schema and that PR creation is allowed.
-
-The scheduled run fires on weekdays at 18:00 Amsterdam time; start it by hand from
-the Actions tab ("Orbit feedback" → Run workflow).
-
-Each run uploads its `.orbit/` folder (manifest, results, PR body) as an artifact,
-so you can read why a point was skipped even though the AI step hides its output.
-If the AI skips every point, no PR is opened and each point is released back to
-`Open` with its skip reason.
-
-The bot addresses each point at the scale a developer would (a new component, a
-modal, multiple files) rather than the smallest possible edit — everything lands
-as a reviewable, revertable PR. When it makes an assumption it does the change
-anyway and records a caveat, collected into a **Kanttekeningen** section in the PR
-body. A merged PR's `feedback/<date>` branch is deleted automatically, and a
-cancelled run's claims self-heal: both workflows release `In behandeling` points
-older than six hours back to `Open` at the start of the next run.
-
-### Run it locally
-
-```bash
-# with NOTION_API_KEY, NOTION_DATABASE_ID and NOTION_PROJECT_ID set
-/orbit-feedback
-```
-
-Reject a point outside the PR flow:
-
-```bash
-npx orbit-feedback sync --pr 42 && git push
-```
-
-### CLI
-
-| Command | Does |
-|---------|------|
-| `orbit-feedback fetch` | Pulls open feedback → `.orbit/feedback.json` (`--claim` sets In behandeling) |
-| `orbit-feedback status` | Updates Notion status (`--set`, `--pr`, `--antwoord`, `--stale <hours>`) |
-| `orbit-feedback pr-body` | Builds the PR checklist from the manifest + git trailers |
-| `orbit-feedback sync` | Handles check/uncheck: revert + status update |
-| `orbit-feedback init` | Copies skill + workflows (`--check` validates the schema) |
-
-Points are tied to commits by the trailer `Orbit-Feedback: <notion-page-id>`.
-
-> **Source capture** (sending the React component name and source file with a
-> comment, so the AI maps feedback to code more precisely) is not part of this
-> version; the AI falls back to the label, page and element path. It is a planned
-> follow-up.
 
 ---
 
