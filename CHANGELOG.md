@@ -33,6 +33,11 @@ client project:
   (manifest, results, PR body) is now uploaded as a run artifact
   (`actions/upload-artifact@v4`, `if: always()`, `include-hidden-files: true`,
   14-day retention).
+- **`orbit-feedback sync` "ambiguous argument 'main..HEAD'".** A CI checkout of
+  the feedback branch has no local base branch, only `origin/main`. The base is
+  now resolved to `origin/<base>` (from the PR body's `base=` marker) before the
+  `git log` range, with a regression test covering a checkout that lacks a local
+  base branch.
 
 ## 3.1.0
 
