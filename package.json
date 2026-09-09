@@ -1,6 +1,6 @@
 {
   "name": "@strakzat/orbit",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Orbit — client-facing annotation & feedback engine voor alle projecten",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
