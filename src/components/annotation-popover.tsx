@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { cx } from "../utils/cx";
+import { formatDate } from "../utils/format";
 import { TypeBadge } from "./type-badge";
 import { CommentThread } from "./comment-thread";
 import { CommentForm } from "./comment-form";
@@ -95,7 +96,7 @@ export function AnnotationPopover({
         React.createElement(
           "div",
           { className: "orbit-popover__meta" },
-          `${annotation.author} · ${annotation.date}`
+          `${annotation.author} · ${formatDate(annotation.date)}`
         )
       ),
 

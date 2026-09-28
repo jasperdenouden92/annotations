@@ -8,6 +8,21 @@ export function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/**
+ * A date as "15 Apr 2026", or the raw string if it will not parse. A bare
+ * "2026-04-15" is read as a calendar date, not UTC midnight, so it does not
+ * slip a day west of Greenwich. Months are spelled out by hand to keep the
+ * output identical in every browser locale.
+ */
+export function formatDate(value: string): string {
+  const bare = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  const date = bare ? new Date(+bare[1], +bare[2] - 1, +bare[3]) : new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+}
+
 /**
  * A short relative time — "nu", "5m", "3u", "2d" — falling back to a date once a
  * comment is older than a week, and to the raw string if it will not parse.
@@ -24,10 +39,5 @@ export function relativeTime(iso: string): string {
   if (hours < 24) return `${hours}u`;
   const days = Math.round(hours / 24);
   if (days < 7) return `${days}d`;
-
-  try {
-    return new Date(iso).toLocaleDateString("nl-NL", { day: "numeric", month: "short" });
-  } catch {
-    return iso;
-  }
+  return formatDate(iso);
 }
