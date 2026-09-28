@@ -1,5 +1,6 @@
 import React from "react";
 import { cx } from "../utils/cx";
+import { formatDate } from "../utils/format";
 import { CrosshairIcon } from "../icons";
 import { TypeBadge } from "./type-badge";
 import { navigateTo, routeBreadcrumb } from "../utils/route-matching";
@@ -96,7 +97,7 @@ export function AnnotationCard({
       React.createElement(
         "span",
         { className: "orbit-meta" },
-        `${annotation.author} · ${annotation.date}`
+        `${annotation.author} · ${formatDate(annotation.date)}`
       )
     )
   );
